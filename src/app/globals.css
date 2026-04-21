@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════
+   Legal Mouse — Material Design 3 Tokens
+   Light / Dark mode via .dark class
+   ═══════════════════════════════════════════ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ─── Surfaces ─── */
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f3f3;
+  --surface-container: #eeeeee;
+  --surface-container-high: #e8e8e8;
+  --surface-container-highest: #e2e2e2;
+  --surface: #f9f9f9;
+  --surface-dim: #dadada;
+
+  /* ─── Text ─── */
+  --on-surface: #1b1b1b;
+  --on-surface-variant: #4c4354;
+  --on-primary: #ffffff;
+  --on-primary-container: #eed9ff;
+  --on-secondary-container: #5b3385;
+
+  /* ─── Accent ─── */
+  --primary: #6e00c1;
+  --primary-container: #8a2be2;
+  --secondary-container: #d0a3fe;
+  --primary-fixed-dim: #dcb8ff;
+
+  /* ─── Borders ─── */
+  --outline: #7e7386;
+  --outline-variant: #cfc2d7;
 }
 
+.dark {
+  --surface-container-lowest: #0a0a0a;
+  --surface-container-low: #121212;
+  --surface-container: #1a1a1a;
+  --surface-container-high: #252525;
+  --surface-container-highest: #2e2e2e;
+  --surface: #000000;
+  --surface-dim: #0a0a0a;
+
+  --on-surface: #ffffff;
+  --on-surface-variant: #a1a1aa;
+  --on-primary: #ffffff;
+  --on-primary-container: #dcb8ff;
+  --on-secondary-container: #dcb8ff;
+
+  --primary: #8a2be2;
+  --primary-container: #7722cc;
+  --secondary-container: #3d1f5c;
+  --primary-fixed-dim: #dcb8ff;
+
+  --outline: #444444;
+  --outline-variant: #2a2a2a;
+}
+
+/* ─── Tailwind v4 theme mapping ─── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-secondary-container: var(--secondary-container);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  /* Backward-compat aliases */
+  --color-background: var(--surface);
+  --color-foreground: var(--on-surface);
+  --color-muted: var(--on-surface-variant);
+
+  /* Fonts */
+  --font-headline: var(--font-manrope), sans-serif;
+  --font-body: var(--font-newsreader), serif;
+  --font-label: var(--font-inter), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
+  --font-serif: var(--font-newsreader), serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Tailwind v4 includes its own preflight reset — no manual reset needed */
+
+/* ─── Utility classes ─── */
+.gradient-text {
+  background: linear-gradient(135deg, #6e00c1, #8a2be2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.dark .glass-panel {
+  background-color: rgba(10, 10, 10, 0.85);
+}
+
+.shadow-ambient {
+  box-shadow: 0 10px 40px rgba(27, 27, 27, 0.06);
+}
+.dark .shadow-ambient {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.bg-glass {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.dark .bg-glass {
+  background-color: rgba(10, 10, 10, 0.85);
+}
+
+::selection {
+  background-color: var(--secondary-container);
+  color: var(--on-surface);
 }
