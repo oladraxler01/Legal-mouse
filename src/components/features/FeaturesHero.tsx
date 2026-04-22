@@ -6,9 +6,9 @@ export default function FeaturesHero() {
         <img
           src="/images/courtroom-hero.png"
           alt="Modern Courtroom"
-          className="w-full h-full object-cover opacity-60 dark:opacity-40"
+          className="w-full h-full object-cover opacity-100 dark:opacity-80"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-surface/20 via-surface to-surface" />
+        <div className="absolute inset-0 bg-gradient-to-b from-surface/30 via-surface/60 to-surface" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-12 text-center mt-12">
