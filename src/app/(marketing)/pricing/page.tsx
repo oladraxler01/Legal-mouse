@@ -127,6 +127,34 @@ export default function PricingPage() {
         </div>
 
       </div>
+
+      {/* Frequently Asked Questions */}
+      <div className="w-full max-w-4xl mx-auto mt-16 px-6">
+        <h2 className="font-headline font-bold text-3xl text-center text-on-surface mb-10 tracking-tight">
+          Frequently Asked Questions
+        </h2>
+        <div className="space-y-6">
+          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/20">
+            <h4 className="font-headline font-semibold text-xl text-on-surface mb-3">Can I switch plans later?</h4>
+            <p className="font-body text-on-surface-variant text-[15px] leading-relaxed">
+              Absolutely. You can upgrade or downgrade your plan at any time from your account settings. Changes will be pro-rated for the remainder of your billing cycle.
+            </p>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/20">
+            <h4 className="font-headline font-semibold text-xl text-on-surface mb-3">What does 'Advanced AI case summaries' include?</h4>
+            <p className="font-body text-on-surface-variant text-[15px] leading-relaxed">
+              Our AI models are trained specifically on legal corpus. They provide concise summaries of facts, procedural history, issues, holdings, and reasoning, highlighting key precedents automatically.
+            </p>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/20">
+            <h4 className="font-headline font-semibold text-xl text-on-surface mb-3">Is there a discount for non-profits or academic institutions?</h4>
+            <p className="font-body text-on-surface-variant text-[15px] leading-relaxed">
+              Yes, we offer specialized pricing for accredited academic institutions and registered 501(c)(3) organizations. Please contact our sales team for more information.
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

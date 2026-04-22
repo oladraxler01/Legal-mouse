@@ -27,23 +27,33 @@ export default function AboutPage() {
 /* ─── Hero ─── */
 function HeroSection() {
   return (
-    <motion.section
-      className="max-w-4xl mx-auto px-6 md:px-12 mb-28 pt-12 text-center"
-      initial="hidden"
-      animate="visible"
-      variants={stagger}
-    >
-      <motion.h1
-        variants={fadeUp}
-        className="font-headline font-extrabold text-4xl sm:text-5xl md:text-7xl leading-tight mb-8 text-foreground tracking-tight"
+    <div className="relative w-full overflow-hidden">
+      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt="Courthouse background texture"
+          className="w-full h-full object-cover grayscale mix-blend-multiply"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTji2eGx4QBpXRjgtxDSfk0F67Wj4hiR5dfM3bKEZb_Y39hWrssVWlEL0X7IPLfrf2XGGK7SpKG4wmehlzZDCO0Aw-cGXL3wY_7m0DEUQHQHi0yiCcffMkDiHcqJl2oTbEPmIq6A7gkezg09kLOK1wcw6tqaOcQCdmDjolvrM77mTkza_pxJeFNOHaryYQkOdCkNiL6yQ8pQqF5y9IwwPpmUaF_rjouYas_FQXBtepypzbGG2TWIwk35O2CVqS49MxfihlM04EWFU"
+        />
+      </div>
+      <motion.section
+        className="max-w-4xl mx-auto px-6 md:px-12 mb-28 pt-32 pb-10 text-center relative z-10"
+        initial="hidden"
+        animate="visible"
+        variants={stagger}
       >
-        Democratizing <br />
-        <span className="gradient-text">Legal Intelligence.</span>
-      </motion.h1>
-      <motion.p variants={fadeUp} className="font-serif text-lg md:text-2xl text-muted leading-relaxed max-w-3xl mx-auto">
-        We believe that the law should not be a walled garden. Legal Mouse is built to dismantle the complexity of legal research, bringing unparalleled clarity to every citation.
-      </motion.p>
-    </motion.section>
+        <motion.h1
+          variants={fadeUp}
+          className="font-headline font-extrabold text-4xl sm:text-5xl md:text-7xl leading-tight mb-8 text-foreground tracking-tight"
+        >
+          Democratizing <br />
+          <span className="gradient-text">Legal Intelligence.</span>
+        </motion.h1>
+        <motion.p variants={fadeUp} className="font-serif text-lg md:text-2xl text-muted leading-relaxed max-w-3xl mx-auto">
+          We believe that the law should not be a walled garden. Legal Mouse is built to dismantle the complexity of legal research, bringing unparalleled clarity to every citation.
+        </motion.p>
+      </motion.section>
+    </div>
   );
 }
 
