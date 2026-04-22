@@ -18,7 +18,7 @@ export default function TopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-outline-variant/10 transition-colors duration-300">
+    <nav className="sticky top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-outline-variant/10 transition-colors duration-300">
       <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
         {/* Left: Logo + Desktop Links */}
         <div className="flex items-center gap-12">
