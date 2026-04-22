@@ -28,12 +28,12 @@ export default function AboutPage() {
 function HeroSection() {
   return (
     <div className="relative w-full overflow-hidden">
-      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
+      <div className="absolute inset-0 z-0 opacity-[0.15] pointer-events-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          alt="Courthouse background texture"
+          alt="Lady Justice carrying the scales of law"
           className="w-full h-full object-cover grayscale mix-blend-multiply"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTji2eGx4QBpXRjgtxDSfk0F67Wj4hiR5dfM3bKEZb_Y39hWrssVWlEL0X7IPLfrf2XGGK7SpKG4wmehlzZDCO0Aw-cGXL3wY_7m0DEUQHQHi0yiCcffMkDiHcqJl2oTbEPmIq6A7gkezg09kLOK1wcw6tqaOcQCdmDjolvrM77mTkza_pxJeFNOHaryYQkOdCkNiL6yQ8pQqF5y9IwwPpmUaF_rjouYas_FQXBtepypzbGG2TWIwk35O2CVqS49MxfihlM04EWFU"
+          src="/lady-justice.png"
         />
       </div>
       <motion.section

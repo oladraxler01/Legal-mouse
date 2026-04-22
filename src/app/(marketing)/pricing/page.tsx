@@ -10,7 +10,7 @@ export default function PricingPage() {
       
       {/* Background Pattern */}
       <div 
-        className="absolute inset-0 -z-10 opacity-[0.03] pointer-events-none" 
+        className="absolute inset-0 -z-10 opacity-10 pointer-events-none" 
         style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, #000 1px, transparent 0)',
           backgroundSize: '24px 24px'
