@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Inter, Newsreader } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
-import TopNav from "@/components/TopNav";
-import Footer from "@/components/Footer";
 import "./globals.css";
 
 const manrope = Manrope({
