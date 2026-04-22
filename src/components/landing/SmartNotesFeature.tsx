@@ -1,3 +1,5 @@
+"use client";
+
 import { BookOpen, MessageSquare, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 

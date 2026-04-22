@@ -1,3 +1,5 @@
+"use client";
+
 import { Sparkles, FileText, Search } from "lucide-react";
 import { motion } from "framer-motion";
 

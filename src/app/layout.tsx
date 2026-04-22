@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import React from "react";
 import { Manrope, Inter, Newsreader } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
-import Script from "next/script";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -40,14 +39,13 @@ export default function RootLayout({
       className={`${manrope.variable} ${inter.variable} ${newsreader.variable} h-full`}
       suppressHydrationWarning
     >
-      <Script
-        id="theme-initializer"
-        strategy="beforeInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `try{if(localStorage.getItem('legal-mouse-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
-        }}
-      />
       <body className="min-h-full font-body antialiased bg-surface-container-lowest text-on-surface">
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('legal-mouse-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
+          }}
+        />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

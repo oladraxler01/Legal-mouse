@@ -1,3 +1,5 @@
+"use client";
+
 import { Building2, RefreshCw, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 

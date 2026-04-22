@@ -1,4 +1,7 @@
+"use client";
+
 import { Library, GitBranch, BookmarkPlus } from "lucide-react";
+
 import { motion } from "framer-motion";
 
 const fadeUp = {
