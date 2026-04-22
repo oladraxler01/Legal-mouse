@@ -19,57 +19,60 @@ export default function TopNav() {
 
   return (
     <nav className="sticky top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-outline-variant/10 transition-colors duration-300">
-      <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-        {/* Left: Logo + Desktop Links */}
-        <div className="flex items-center gap-12">
+      <div className="flex h-20 items-center px-8 w-full max-w-screen-2xl mx-auto relative relative">
+        {/* Left: Logo */}
+        <div className="w-1/4 flex items-center">
           <Link
             href="/"
             className="text-2xl font-bold tracking-tight text-on-surface font-headline"
           >
             Legal Mouse
           </Link>
-          <div className="hidden md:flex gap-8">
-            {navLinks.map(({ href, label }) => {
-              const isActive = pathname === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`font-label font-bold text-sm tracking-wide transition-colors duration-200 ${
-                    isActive
-                      ? "text-primary border-b-2 border-primary pb-1"
-                      : "text-zinc-950 dark:text-white hover:text-primary dark:hover:text-primary"
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Right: Theme toggle + Auth */}
-        <div className="flex items-center gap-6">
+        {/* Center: Desktop Links */}
+        <div className="hidden md:flex justify-center items-center gap-10 absolute left-1/2 -translate-x-1/2">
+          {navLinks.map(({ href, label }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`font-label text-[13px] font-semibold tracking-wide transition-colors duration-200 ${
+                  isActive
+                    ? "text-primary border-b-2 border-primary pb-0.5"
+                    : "text-zinc-600 dark:text-zinc-300 hover:text-primary dark:hover:text-primary"
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Right: Auth & Toggles */}
+        <div className="flex w-1/4 justify-end items-center gap-6 ml-auto">
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface focus:outline-none"
           >
             {theme === "dark" ? (
-              <Sun className="h-5 w-5" />
+              <Sun className="h-4 w-4 text-zinc-400" />
             ) : (
-              <Moon className="h-5 w-5" />
+              <Moon className="h-4 w-4 text-zinc-400" />
             )}
           </button>
+          
           <Link
             href="/login"
-            className="hidden md:block font-label text-sm font-semibold tracking-wide hover:text-primary transition-colors"
+            className="hidden md:block font-label text-sm text-zinc-900 font-medium tracking-wide hover:text-primary transition-colors"
           >
-            Log In
+            Login
           </Link>
           <Link
             href="/register"
-            className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-md font-label text-sm font-semibold hover:opacity-90 transition-opacity shadow-[0_4px_14px_0_rgba(138,43,226,0.39)]"
+            className="hidden md:block bg-[#7f22ce] text-white px-5 py-2.5 rounded text-sm font-semibold hover:bg-[#6b21a8] transition-colors shadow-sm"
           >
             Get Started
           </Link>
