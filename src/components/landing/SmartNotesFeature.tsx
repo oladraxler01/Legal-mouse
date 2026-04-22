@@ -1,5 +1,14 @@
 import { BookOpen, MessageSquare, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
 const cards = [
   {
     icon: BookOpen,
@@ -17,19 +26,26 @@ const cards = [
 
 export default function SmartNotesFeature() {
   return (
-    <section className="mt-12 mx-4 lg:mx-auto max-w-7xl bg-surface-container-low rounded-3xl px-8 py-24">
-      <div className="text-center mb-16">
+    <motion.section 
+      className="mt-12 mx-4 lg:mx-auto max-w-7xl bg-surface-container-low rounded-3xl px-8 py-24"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-50px" }}
+      variants={stagger}
+    >
+      <motion.div variants={fadeUp} className="text-center mb-16">
         <h2 className="font-headline text-sm font-bold tracking-widest uppercase text-primary mb-4">
           Structure &amp; Discourse
         </h2>
         <h3 className="font-headline text-3xl md:text-4xl font-bold max-w-2xl mx-auto text-on-surface">
           Curated Knowledge, Shared Wisdom.
         </h3>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {cards.map(({ icon: Icon, title, desc, link }) => (
-          <div
+          <motion.div
+            variants={fadeUp}
             key={title}
             className="bg-surface-container-lowest p-10 rounded-xl hover:bg-surface-container transition-colors duration-300 group"
           >
@@ -46,9 +62,9 @@ export default function SmartNotesFeature() {
               {link}{" "}
               <ArrowRight className="h-4 w-4" />
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 }

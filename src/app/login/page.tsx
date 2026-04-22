@@ -110,6 +110,7 @@ export default function LoginPage() {
       {/* Right Panel: Image / Ambiance */}
       <div className="hidden lg:block lg:w-7/12 xl:w-2/3 h-screen relative bg-surface-container-low overflow-hidden">
         <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="Classic legal library background"
             className="w-full h-full object-cover opacity-80 mix-blend-multiply dark:mix-blend-normal dark:opacity-60"

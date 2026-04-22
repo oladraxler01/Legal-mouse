@@ -1,5 +1,14 @@
 import { Sparkles, FileText, Search } from "lucide-react";
+import { motion } from "framer-motion";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+};
 const features = [
   {
     icon: FileText,
@@ -17,9 +26,16 @@ export default function AILegalIntelligence() {
   return (
     <section className="py-24 bg-surface-container-low">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={stagger}
+        >
           {/* Visual — Left on desktop */}
-          <div className="order-2 lg:order-1 relative h-[500px] rounded-xl overflow-hidden bg-surface-container-low p-8 flex items-center justify-center">
+          <motion.div variants={fadeUp} className="order-2 lg:order-1 relative h-[500px] rounded-xl overflow-hidden bg-surface-container-low p-8 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="Abstract glowing lines representing AI and neural networks"
               className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-60 mix-blend-multiply dark:mix-blend-normal"
@@ -50,10 +66,10 @@ export default function AILegalIntelligence() {
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Text — Right on desktop */}
-          <div className="order-1 lg:order-2">
+          <motion.div variants={fadeUp} className="order-1 lg:order-2">
             <h2 className="font-headline text-sm font-bold tracking-widest text-primary uppercase mb-4">
               AI Legal Intelligence
             </h2>
@@ -84,8 +100,8 @@ export default function AILegalIntelligence() {
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

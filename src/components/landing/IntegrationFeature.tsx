@@ -1,5 +1,14 @@
 import { Building2, RefreshCw, Plus } from "lucide-react";
+import { motion } from "framer-motion";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
 const universities = [
   { name: "LSE", label: "Module Aligned", offset: false },
   { name: "Oxford", label: "Reading Lists", offset: true },
@@ -9,8 +18,14 @@ const universities = [
 export default function IntegrationFeature() {
   return (
     <section className="my-12 mx-4 lg:mx-auto max-w-7xl bg-surface-container-low rounded-3xl px-8 py-24">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div className="p-4 lg:p-12">
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        variants={stagger}
+      >
+        <motion.div variants={fadeUp} className="p-4 lg:p-12">
           <h2 className="font-headline text-sm font-bold tracking-widest uppercase text-primary mb-4">
             Seamless Integration
           </h2>
@@ -51,10 +66,10 @@ export default function IntegrationFeature() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* University Grid */}
-        <div className="flex justify-center p-4">
+        <motion.div variants={fadeUp} className="flex justify-center p-4">
           <div className="grid grid-cols-2 gap-6 w-full max-w-md">
             {universities.map(({ name, label, offset }) => (
               <div
@@ -78,8 +93,8 @@ export default function IntegrationFeature() {
               </span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

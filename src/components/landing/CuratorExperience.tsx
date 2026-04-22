@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import { Gavel, Bookmark } from "lucide-react";
+import { motion } from "framer-motion";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
 
 const tabs = {
   FACTS:
@@ -16,8 +26,14 @@ export default function CuratorExperience() {
 
   return (
     <section className="py-24">
-      <div className="max-w-7xl mx-auto px-8">
-        <div className="text-center mb-16">
+      <motion.div 
+        className="max-w-7xl mx-auto px-8"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        variants={stagger}
+      >
+        <motion.div variants={fadeUp} className="text-center mb-16">
           <h2 className="font-headline text-sm font-bold tracking-widest uppercase text-primary mb-4">
             The Curator Experience
           </h2>
@@ -28,9 +44,9 @@ export default function CuratorExperience() {
             Experience a meticulously designed interface that breaks down dense
             rulings into manageable, interconnected nodes.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="w-full bg-surface-container-low rounded-2xl p-4 md:p-8 border border-outline-variant/20 shadow-ambient">
+        <motion.div variants={fadeUp} className="w-full bg-surface-container-low rounded-2xl p-4 md:p-8 border border-outline-variant/20 shadow-ambient">
           <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden flex flex-col md:flex-row">
             {/* Sidebar */}
             <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-outline-variant/10 p-6 bg-surface-container-lowest">
@@ -103,8 +119,8 @@ export default function CuratorExperience() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

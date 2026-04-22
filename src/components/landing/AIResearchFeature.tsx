@@ -1,12 +1,27 @@
 import { CheckCircle, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
 export default function AIResearchFeature() {
   return (
     <section className="py-24">
       <div className="max-w-7xl mx-auto px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={stagger}
+        >
           {/* Text */}
-          <div className="lg:col-span-5 pr-8">
+          <motion.div variants={fadeUp} className="lg:col-span-5 pr-8">
             <h2 className="font-headline text-sm font-bold tracking-widest uppercase text-primary mb-4">
               Intelligence
             </h2>
@@ -30,10 +45,10 @@ export default function AIResearchFeature() {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Visual */}
-          <div className="lg:col-span-7 relative h-[500px] rounded-xl bg-surface-container-low p-8 overflow-hidden">
+          <motion.div variants={fadeUp} className="lg:col-span-7 relative h-[500px] rounded-xl bg-surface-container-low p-8 overflow-hidden">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity"
               style={{
@@ -67,8 +82,8 @@ export default function AIResearchFeature() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

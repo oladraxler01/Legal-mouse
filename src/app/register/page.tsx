@@ -12,6 +12,7 @@ export default function RegisterPage() {
       {/* Left Panel: Image / Ambiance */}
       <section className="hidden md:flex md:w-1/2 lg:w-3/5 bg-surface-container-low relative">
         <div className="absolute inset-0 z-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="Classic legal library background"
             className="w-full h-full object-cover opacity-100 dark:opacity-80"

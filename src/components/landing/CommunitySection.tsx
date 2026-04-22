@@ -1,5 +1,14 @@
 import { Quote } from "lucide-react";
+import { motion } from "framer-motion";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
 const testimonials = [
   {
     initials: "AJ",
@@ -26,20 +35,27 @@ const stats = [
 export default function CommunitySection() {
   return (
     <section className="py-24">
-      <div className="max-w-7xl mx-auto px-8">
-        <div className="text-center mb-16">
+      <motion.div 
+        className="max-w-7xl mx-auto px-8"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        variants={stagger}
+      >
+        <motion.div variants={fadeUp} className="text-center mb-16">
           <h2 className="font-headline text-sm font-bold tracking-widest uppercase text-primary mb-4">
             Community Intelligence
           </h2>
           <h3 className="font-headline text-3xl md:text-4xl font-bold max-w-2xl mx-auto text-on-surface">
             Vetted by Top Legal Minds.
           </h3>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Testimonials */}
           {testimonials.map(({ initials, name, school, quote }) => (
-            <div
+            <motion.div
+              variants={fadeUp}
               key={name}
               className="bg-surface-container-low p-8 rounded-2xl relative"
             >
@@ -60,11 +76,11 @@ export default function CommunitySection() {
               <p className="font-body text-on-surface-variant italic leading-relaxed">
                 {quote}
               </p>
-            </div>
+            </motion.div>
           ))}
 
           {/* Contributor Network Stats */}
-          <div className="bg-gradient-to-br from-primary to-primary-container p-8 rounded-2xl text-white flex flex-col justify-center shadow-ambient">
+          <motion.div variants={fadeUp} className="bg-gradient-to-br from-primary to-primary-container p-8 rounded-2xl text-white flex flex-col justify-center shadow-ambient">
             <h5 className="font-headline text-xl font-bold mb-6">
               Contributor Network
             </h5>
@@ -87,9 +103,9 @@ export default function CommunitySection() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
