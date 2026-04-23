@@ -149,32 +149,32 @@ export default function CommunityPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white p-6 md:p-12 pb-32">
+    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32 transition-colors duration-300">
       {/* Header Area */}
       <header className="flex justify-between items-start mb-10">
         <div>
-          <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Community Q&A</h1>
-          <p className="font-body text-zinc-500 text-lg">Get help from fellow students</p>
+          <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-on-surface">Community Q&A</h1>
+          <p className="font-body text-on-surface-variant text-lg opacity-70">Get help from fellow students</p>
         </div>
         <Link 
           href="/community/ask"
           className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-primary/30"
         >
-          <Plus className="h-6 w-6 text-white" />
+          <Plus className="h-6 w-6 text-on-primary" />
         </Link>
       </header>
 
       {/* Search Bar */}
       <div className="relative mb-8">
         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-zinc-600" />
+          <Search className="h-5 w-5 text-on-surface-variant/40" />
         </div>
         <input 
           type="text" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search questions..." 
-          className="w-full bg-[#111111] border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none"
+          className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-on-surface shadow-sm"
         />
       </div>
 
@@ -187,7 +187,7 @@ export default function CommunityPage() {
             className={`px-6 py-2.5 rounded-xl font-label font-bold text-sm transition-all duration-300 border whitespace-nowrap ${
               activeFilter === category 
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" 
-                : "bg-[#111111] border-white/5 text-zinc-500 hover:border-white/20 active:scale-95"
+                : "bg-surface-container-low border-outline-variant/10 text-on-surface-variant/60 hover:border-outline-variant/30 active:scale-95"
             }`}
           >
             {category}
@@ -201,18 +201,18 @@ export default function CommunityPage() {
           <Link 
             key={q.id}
             href={`/community/${q.id}`}
-            className="flex gap-6 bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 hover:bg-[#111111] hover:border-white/10 transition-all group"
+            className="flex gap-6 bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 md:p-8 hover:bg-surface-container-low hover:border-primary/30 transition-all group shadow-sm"
           >
             {/* Voting Column */}
             <div className="flex flex-col items-center gap-1 min-w-[40px]">
-              <ArrowUp className="h-6 w-6 text-zinc-700 group-hover:text-primary transition-colors" />
+              <ArrowUp className="h-6 w-6 text-on-surface-variant/20 group-hover:text-primary transition-colors" />
               <span className="font-headline font-bold text-lg text-primary">{q.upvotes}</span>
             </div>
 
             {/* Main Content Column */}
             <div className="flex-1 flex flex-col gap-4">
               <div className="flex justify-between items-start">
-                <h3 className="font-headline text-lg md:text-xl font-bold group-hover:text-primary transition-colors leading-tight">
+                <h3 className="font-headline text-lg md:text-xl font-bold group-hover:text-primary transition-colors leading-tight text-on-surface">
                   {q.title}
                 </h3>
                 {q.is_resolved && (
@@ -222,10 +222,10 @@ export default function CommunityPage() {
 
               {/* Author Row */}
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold">
+                <div className="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-on-surface">
                   {q.author.avatar_initial}
                 </div>
-                <span className="text-sm font-medium text-zinc-300">{q.author.name}</span>
+                <span className="text-sm font-medium text-on-surface-variant">{q.author.name}</span>
                 {q.author.is_top_contributor && (
                   <span className="bg-primary/20 text-primary text-[9px] font-bold uppercase px-2 py-0.5 rounded border border-primary/20">
                     Top Contributor
@@ -236,22 +236,22 @@ export default function CommunityPage() {
               {/* Tags Row */}
               <div className="flex flex-wrap gap-2">
                 {q.tags.map(tag => (
-                  <span key={tag} className="bg-[#1A1A1A] text-zinc-500 px-3 py-1 rounded-full text-[10px] font-bold border border-white/5">
+                  <span key={tag} className="bg-surface-container-high text-on-surface-variant/70 px-3 py-1 rounded-full text-[10px] font-bold border border-outline-variant/5">
                     {tag}
                   </span>
                 ))}
               </div>
 
               {/* Meta Row */}
-              <div className="flex items-center gap-6 text-zinc-500 text-xs">
+              <div className="flex items-center gap-6 text-on-surface-variant/50 text-xs font-bold">
                 <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-primary/10">
                   {q.topic.name}
                 </span>
-                <div className="flex items-center gap-1.5 font-medium">
+                <div className="flex items-center gap-1.5">
                   <MessageSquare className="h-3.5 w-3.5" />
                   {q.answer_count} answers
                 </div>
-                <div className="flex items-center gap-1.5 font-medium">
+                <div className="flex items-center gap-1.5">
                   <Eye className="h-3.5 w-3.5" />
                   {q.view_count} views
                 </div>
@@ -260,14 +260,14 @@ export default function CommunityPage() {
             
             {/* Mobile Chevron */}
             <div className="flex items-center md:hidden">
-              <ChevronRight className="h-5 w-5 text-zinc-800" />
+              <ChevronRight className="h-5 w-5 text-on-surface-variant/20" />
             </div>
           </Link>
         ))}
 
         {filteredQuestions.length === 0 && !loading && (
-          <div className="text-center py-20 bg-[#0A0A0A] rounded-3xl border border-white/5">
-            <p className="text-zinc-500 font-serif italic text-lg">No questions found matching your search.</p>
+          <div className="text-center py-20 bg-surface-container-lowest rounded-3xl border border-outline-variant/10">
+            <p className="text-on-surface-variant/50 font-serif italic text-lg">No questions found matching your search.</p>
           </div>
         )}
       </div>

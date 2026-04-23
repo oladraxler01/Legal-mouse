@@ -112,24 +112,24 @@ export default function CasesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white p-6 md:p-12 pb-32">
+    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32 transition-colors duration-300">
       {/* Header */}
       <header className="mb-10">
-        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-white">Case Law Library</h1>
-        <p className="font-body text-zinc-500 text-lg">Search landmark judgments</p>
+        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-on-surface">Case Law Library</h1>
+        <p className="font-body text-on-surface-variant text-lg opacity-70">Search landmark judgments</p>
       </header>
 
       {/* Search Bar */}
-      <div className="relative mb-8 text-white">
+      <div className="relative mb-8 text-on-surface">
         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-zinc-600" />
+          <Search className="h-5 w-5 text-on-surface-variant/40" />
         </div>
         <input 
           type="text" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search cases by name, court, or year..." 
-          className="w-full bg-[#111111] border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-white"
+          className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-on-surface shadow-sm"
         />
       </div>
 
@@ -139,10 +139,10 @@ export default function CasesPage() {
           <button
             key={category}
             onClick={() => setActiveFilter(category)}
-            className={`px-6 py-2.5 rounded-xl font-label font-bold text-sm transition-all duration-300 border ${
+            className={`px-6 py-2.5 rounded-xl font-label font-bold text-sm transition-all duration-300 border whitespace-nowrap ${
               activeFilter === category 
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" 
-                : "bg-[#111111] border-white/5 text-zinc-500 hover:border-white/20 active:scale-95"
+                : "bg-surface-container-low border-outline-variant/10 text-on-surface-variant/60 hover:border-outline-variant/30 active:scale-95"
             }`}
           >
             {category}
@@ -156,16 +156,16 @@ export default function CasesPage() {
           <Link 
             key={c.id}
             href={`/cases/${c.id}`}
-            className="block bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 hover:bg-[#111111] hover:border-white/10 transition-all group relative overflow-hidden"
+            className="block bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 md:p-8 hover:bg-surface-container-low hover:border-primary/30 transition-all group relative overflow-hidden shadow-sm"
           >
             <div className="flex justify-between items-start mb-4">
-              <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%] text-white">
+              <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%] text-on-surface">
                 {c.title}
               </h3>
-              <ChevronRight className="h-5 w-5 text-zinc-700 group-hover:text-primary transition-colors mt-1" />
+              <ChevronRight className="h-5 w-5 text-on-surface-variant/20 group-hover:text-primary transition-colors mt-1" />
             </div>
 
-            <div className="flex items-center gap-2 text-zinc-500 text-sm mb-6">
+            <div className="flex items-center gap-2 text-on-surface-variant/60 text-sm mb-6">
               <Scale className="h-4 w-4" />
               <span className="font-label font-medium">{c.court} • {c.year}</span>
             </div>
@@ -175,7 +175,7 @@ export default function CasesPage() {
                 {c.topic.name}
               </span>
               {c.tags.map(tag => (
-                <span key={tag} className="bg-[#1A1A1A] text-zinc-500 px-3 py-1.5 rounded-full text-[11px] font-label font-bold border border-white/5">
+                <span key={tag} className="bg-surface-container-high text-on-surface-variant px-3 py-1.5 rounded-full text-[11px] font-label font-bold border border-outline-variant/5">
                   {tag}
                 </span>
               ))}
@@ -186,9 +186,9 @@ export default function CasesPage() {
         ))}
 
         {filteredCases.length === 0 && !loading && (
-          <div className="text-center py-20 bg-[#0A0A0A] rounded-3xl border border-white/5">
-            <Filter className="h-12 w-12 text-zinc-800 mx-auto mb-4" />
-            <p className="text-zinc-500 font-serif italic text-lg">No cases found matching your criteria.</p>
+          <div className="text-center py-20 bg-surface-container-lowest rounded-3xl border border-outline-variant/10">
+            <Filter className="h-12 w-12 text-on-surface-variant/20 mx-auto mb-4" />
+            <p className="text-on-surface-variant/50 font-serif italic text-lg">No cases found matching your criteria.</p>
           </div>
         )}
       </div>

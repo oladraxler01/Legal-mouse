@@ -116,64 +116,64 @@ export default function QuestionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white p-6 md:p-12 pb-32">
+    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32 transition-colors duration-300">
       {/* Back Link */}
       <Link 
         href="/community" 
-        className="inline-flex items-center gap-2 text-zinc-500 hover:text-primary transition-colors text-sm font-label mb-8 group"
+        className="inline-flex items-center gap-2 text-on-surface-variant/40 hover:text-primary transition-colors text-sm font-label mb-8 group"
       >
         <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
         Back to Community
       </Link>
 
       {/* Question Header Section */}
-      <article className="mb-12 border-b border-white/5 pb-10">
-        <h1 className="font-headline text-3xl md:text-4xl font-bold mb-6 leading-tight">
+      <article className="mb-12 border-b border-outline-variant/10 pb-10">
+        <h1 className="font-headline text-3xl md:text-4xl font-bold mb-6 leading-tight text-on-surface">
           {question.title}
         </h1>
 
         <div className="flex flex-wrap items-center gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shadow-inner">
               {question.author.avatar_initial}
             </div>
-            <span className="font-medium">{question.author.name}</span>
+            <span className="font-medium text-on-surface">{question.author.name}</span>
             {question.author.is_top_contributor && (
               <span className="bg-primary/20 text-primary text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-primary/20">
                 Top Contributor
               </span>
             )}
           </div>
-          <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
+          <div className="h-4 w-[1px] bg-outline-variant/20 hidden md:block" />
           <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-primary/10">
             {question.topic.name}
           </span>
           <div className="flex gap-2">
             {question.tags.map(tag => (
-              <span key={tag} className="bg-[#1A1A1A] text-zinc-500 px-3 py-1 rounded-full text-xs font-bold border border-white/5">
+              <span key={tag} className="bg-surface-container-high text-on-surface-variant/70 px-3 py-1 rounded-full text-xs font-bold border border-outline-variant/5">
                 {tag}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="p-8 bg-[#0A0A0A] rounded-3xl border border-white/5 leading-relaxed font-body text-zinc-200 text-lg">
+        <div className="p-8 bg-surface-container-lowest rounded-3xl border border-outline-variant/10 leading-relaxed font-body text-on-surface/80 text-lg shadow-sm">
           {question.body}
         </div>
       </article>
 
       {/* Post Answer Form */}
       <section className="mb-16">
-        <h3 className="font-headline text-xl font-bold mb-6">Your Answer</h3>
-        <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 focus-within:border-primary/50 transition-all">
+        <h3 className="font-headline text-xl font-bold mb-6 text-on-surface">Your Answer</h3>
+        <div className="bg-surface-container-low border border-outline-variant/10 rounded-3xl p-6 focus-within:border-primary/50 transition-all shadow-sm">
           <textarea 
             value={newAnswer}
             onChange={(e) => setNewAnswer(e.target.value)}
             placeholder="Share your legal analysis here..."
-            className="w-full h-40 bg-transparent resize-none outline-none text-white font-body text-base placeholder:text-zinc-700"
+            className="w-full h-40 bg-transparent resize-none outline-none text-on-surface font-body text-base placeholder:text-on-surface-variant/30"
           />
-          <div className="flex justify-end mt-4 pt-4 border-t border-white/5">
-            <button className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+          <div className="flex justify-end mt-4 pt-4 border-t border-outline-variant/10">
+            <button className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
               Post Answer
             </button>
           </div>
@@ -183,19 +183,19 @@ export default function QuestionDetailPage() {
       {/* Answers Feed */}
       <section>
         <div className="flex items-center justify-between mb-8">
-          <h2 className="font-headline text-2xl font-bold">{answers.length} Answers</h2>
-          <div className="flex items-center gap-2 text-zinc-500 text-sm font-label font-bold uppercase tracking-widest">
+          <h2 className="font-headline text-2xl font-bold text-on-surface">{answers.length} Answers</h2>
+          <div className="flex items-center gap-2 text-on-surface-variant/40 text-sm font-label font-bold uppercase tracking-widest">
             Sort by: <span className="text-primary hover:underline cursor-pointer">Votes</span>
           </div>
         </div>
 
         <div className="space-y-8">
           {answers.map((answer) => (
-            <div key={answer.id} className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-8">
+            <div key={answer.id} className="bg-surface-container-lowest border border-outline-variant/10 rounded-3xl p-6 md:p-8 shadow-sm">
               <div className="flex gap-6">
                 {/* Voting Left */}
                 <div className="flex flex-col items-center gap-1 pt-1">
-                  <button className="text-zinc-700 hover:text-primary transition-colors">
+                  <button className="text-on-surface-variant/20 hover:text-primary transition-colors">
                     <ArrowUp className="h-6 w-6" />
                   </button>
                   <span className="font-headline font-bold text-lg text-primary">{answer.upvotes}</span>
@@ -205,49 +205,49 @@ export default function QuestionDetailPage() {
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold">
+                      <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface">
                         {answer.author.avatar_initial}
                       </div>
                       <div>
-                        <div className="font-bold flex items-center gap-2 uppercase tracking-wide text-sm">
+                        <div className="font-bold flex items-center gap-2 uppercase tracking-wide text-sm text-on-surface">
                           {answer.author.name}
                           {answer.is_accepted && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
-                        <div className="text-[10px] text-zinc-600 font-bold">POSTED 2 HOURS AGO</div>
+                        <div className="text-[10px] text-on-surface-variant/40 font-bold">POSTED 2 HOURS AGO</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-zinc-700">
-                      <Share2 className="h-5 w-5 hover:text-primary cursor-pointer" />
-                      <MoreVertical className="h-5 w-5 hover:text-primary cursor-pointer" />
+                    <div className="flex items-center gap-4 text-on-surface-variant/20">
+                      <Share2 className="h-5 w-5 hover:text-primary cursor-pointer transition-colors" />
+                      <MoreVertical className="h-5 w-5 hover:text-primary cursor-pointer transition-colors" />
                     </div>
                   </div>
 
-                  <div className="text-zinc-200 leading-relaxed font-body text-base mb-8">
+                  <div className="text-on-surface/90 leading-relaxed font-body text-base mb-8">
                     {answer.body}
                   </div>
 
                   {/* Nested Comments */}
                   {answer.comments.length > 0 && (
-                    <div className="mt-8 pt-8 border-t border-white/5 space-y-6">
+                    <div className="mt-8 pt-8 border-t border-outline-variant/10 space-y-6">
                       {answer.comments.map(comment => (
                         <div key={comment.id} className="flex gap-4 pl-4 border-l-2 border-primary/20">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-bold text-primary uppercase">{comment.author.name}</span>
-                              <span className="text-[10px] text-zinc-600 font-bold">• 1 HOUR AGO</span>
+                              <span className="text-[10px] text-on-surface-variant/40 font-bold">• 1 HOUR AGO</span>
                             </div>
-                            <p className="text-sm text-zinc-400 font-body">{comment.body}</p>
+                            <p className="text-sm text-on-surface-variant/80 font-body">{comment.body}</p>
                           </div>
                         </div>
                       ))}
-                      <button className="text-xs font-bold text-zinc-600 hover:text-primary transition-colors pl-4">
+                      <button className="text-xs font-bold text-on-surface-variant/40 hover:text-primary transition-colors pl-4">
                         + Add a comment
                       </button>
                     </div>
                   )}
 
                   {answer.comments.length === 0 && (
-                     <button className="text-xs font-bold text-zinc-700 hover:text-primary transition-colors">
+                     <button className="text-xs font-bold text-on-surface-variant/30 hover:text-primary transition-colors">
                       + Add a comment
                     </button>
                   )}
