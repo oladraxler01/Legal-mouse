@@ -2,10 +2,46 @@
 
 import Link from "next/link";
 import { User, Mail, Lock, ArrowRight, Library, Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/lib/supabase";
 import { useState } from "react";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const supabase = createClient();
+
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const fullName = formData.get("fullName") as string;
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setIsLoading(false);
+    } else {
+      setIsSuccess(true);
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen w-full flex bg-surface-container-lowest text-on-surface overflow-hidden">
@@ -63,8 +99,32 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
-            <div className="space-y-6">
+          {isSuccess ? (
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-headline text-2xl font-bold text-on-surface mb-3">
+                Check Your Inbox
+              </h3>
+              <p className="font-body text-on-surface-variant leading-relaxed">
+                We&apos;ve sent a confirmation link to your institutional email. Please verify your account to unlock curated legal intelligence.
+              </p>
+              <button 
+                onClick={() => setIsSuccess(false)}
+                className="mt-8 font-label text-sm font-bold text-primary hover:text-primary-container transition-colors"
+              >
+                Back to Registration
+              </button>
+            </div>
+          ) : (
+            <form className="space-y-8" onSubmit={handleSignUp}>
+              {error && (
+                <div className="p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm font-body">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-6">
               {/* Full Name */}
               <div>
                 <label className="block font-label text-sm font-bold text-on-surface mb-2" htmlFor="fullName">
@@ -157,13 +217,21 @@ export default function RegisterPage() {
             </div>
 
             <button
-              className="group w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-label font-extrabold text-sm tracking-widest uppercase py-5 rounded-xl hover:shadow-xl hover:shadow-primary/20 transition-all flex justify-center items-center gap-3"
+              className="group w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-label font-extrabold text-sm tracking-widest uppercase py-5 rounded-xl hover:shadow-xl hover:shadow-primary/20 transition-all flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
+              disabled={isLoading}
             >
-              Join the Future of Law
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+              ) : (
+                <>
+                  Join the Future of Law
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
+          )}
 
           <div className="mt-12 text-center">
             <p className="font-body text-sm text-on-surface-variant">

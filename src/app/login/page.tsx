@@ -3,9 +3,38 @@
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, Quote, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (loginError) {
+      setError(loginError.message);
+      setIsLoading(false);
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
 
   return (
     <div className="min-h-screen w-full flex bg-surface-container-lowest text-on-surface">
@@ -30,7 +59,12 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleLogin}>
+            {error && (
+              <div className="p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm font-body">
+                {error}
+              </div>
+            )}
             {/* Email Field */}
             <div>
               <label className="block font-label text-sm font-medium text-on-surface mb-2" htmlFor="email">
@@ -86,11 +120,18 @@ export default function LoginPage() {
             {/* Submit Button */}
             <div className="pt-4">
               <button
-                className="group w-full flex justify-center items-center gap-2 py-4 px-4 border border-transparent rounded-md shadow-sm font-label text-sm font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container hover:shadow-[0_8px_30px_rgb(110,0,193,0.3)] transition-all focus:outline-none"
+                className="group w-full flex justify-center items-center gap-2 py-4 px-4 border border-transparent rounded-md shadow-sm font-label text-sm font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container hover:shadow-[0_8px_30px_rgb(110,0,193,0.3)] transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
+                disabled={isLoading}
               >
-                Enter Workspace
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                {isLoading ? (
+                  <div className="h-5 w-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Enter Workspace
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </button>
             </div>
           </form>
