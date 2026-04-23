@@ -5,7 +5,8 @@ import {
   Search, 
   Scale, 
   ChevronRight, 
-  Filter
+  Filter,
+  Book
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -190,6 +191,17 @@ export default function CasesPage() {
             <p className="text-zinc-500 font-serif italic text-lg">No cases found matching your criteria.</p>
           </div>
         )}
+      </div>
+
+      {/* Contribute Button */}
+      <div className="fixed bottom-10 left-6 right-6 md:left-auto md:right-12 md:w-80 z-20">
+        <Link 
+          href="/contribute"
+          className="flex items-center justify-center gap-3 w-full bg-primary py-5 rounded-2xl text-white font-bold text-lg shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+        >
+          <Book className="h-5 w-5" />
+          Contribute Your Case
+        </Link>
       </div>
     </div>
   );
