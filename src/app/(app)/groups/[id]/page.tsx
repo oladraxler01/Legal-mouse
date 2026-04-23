@@ -137,10 +137,22 @@ export default function GroupChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || !currentUserId) return;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("group_messages")
+      .insert({
+        group_id: groupId,
+        sender_id: currentUserId,
+        content: message.trim()
+      });
+
+    if (error) console.error("Error sending message:", error);
+    else setMessage("");
+  };
 
   return (
     <div className="flex h-screen bg-[#000000] text-white overflow-hidden">
