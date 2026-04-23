@@ -26,54 +26,52 @@ interface Case {
 
 const filterCategories = ["All", "Contract", "Tort", "Criminal", "Constitutional"];
 
+const mockCases: Case[] = [
+  {
+    id: "c1",
+    title: "Carlill v. Carbolic Smoke Ball Co.",
+    court: "Court of Appeal",
+    year: "1893",
+    topic: { id: "1", name: "Contract Law" },
+    tags: ["Offer", "Acceptance", "Unilateral Contract"],
+  },
+  {
+    id: "c2",
+    title: "Donoghue v. Stevenson",
+    court: "House of Lords",
+    year: "1932",
+    topic: { id: "2", name: "Tort Law" },
+    tags: ["Negligence", "Duty of Care", "Neighbor Principle"],
+  },
+  {
+    id: "c3",
+    title: "R v. Brown",
+    court: "House of Lords",
+    year: "1993",
+    topic: { id: "3", name: "Criminal Law" },
+    tags: ["Consent", "ABH", "Policy"],
+  },
+  {
+    id: "c4",
+    title: "A v. Secretary of State for Home Dept",
+    court: "House of Lords",
+    year: "2004",
+    topic: { id: "4", name: "Constitutional Law" },
+    tags: ["Human Rights", "Public Law", "Terrorism"],
+  },
+];
+
 export default function CasesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock data for initial high-fidelity demonstration
-  const mockCases: Case[] = [
-    {
-      id: "c1",
-      title: "Carlill v. Carbolic Smoke Ball Co.",
-      court: "Court of Appeal",
-      year: "1893",
-      topic: { id: "1", name: "Contract Law" },
-      tags: ["Offer", "Acceptance", "Unilateral Contract"],
-    },
-    {
-      id: "c2",
-      title: "Donoghue v. Stevenson",
-      court: "House of Lords",
-      year: "1932",
-      topic: { id: "2", name: "Tort Law" },
-      tags: ["Negligence", "Duty of Care", "Neighbor Principle"],
-    },
-    {
-      id: "c3",
-      title: "R v. Brown",
-      court: "House of Lords",
-      year: "1993",
-      topic: { id: "3", name: "Criminal Law" },
-      tags: ["Consent", "ABH", "Policy"],
-    },
-    {
-      id: "c4",
-      title: "A v. Secretary of State for Home Dept",
-      court: "House of Lords",
-      year: "2004",
-      topic: { id: "4", name: "Constitutional Law" },
-      tags: ["Human Rights", "Public Law", "Terrorism"],
-    },
-  ];
-
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       const supabase = createClient();
       
-      // Attempt to fetch from Supabase with join on topics
       const { data: dbCases, error } = await supabase
         .from('cases')
         .select(`
@@ -89,7 +87,6 @@ export default function CasesPage() {
         `);
 
       if (error || !dbCases || dbCases.length === 0) {
-        console.log("Using mock data for Case Law Library");
         setCases(mockCases);
       } else {
         setCases(dbCases as unknown as Case[]);
@@ -117,12 +114,12 @@ export default function CasesPage() {
     <div className="min-h-screen bg-[#000000] text-white p-6 md:p-12 pb-32">
       {/* Header */}
       <header className="mb-10">
-        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2">Case Law Library</h1>
+        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-white">Case Law Library</h1>
         <p className="font-body text-zinc-500 text-lg">Search landmark judgments</p>
       </header>
 
       {/* Search Bar */}
-      <div className="relative mb-8">
+      <div className="relative mb-8 text-white">
         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-zinc-600" />
         </div>
@@ -131,7 +128,7 @@ export default function CasesPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search cases by name, court, or year..." 
-          className="w-full bg-[#111111] border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none"
+          className="w-full bg-[#111111] border border-white/5 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-white"
         />
       </div>
 
@@ -161,7 +158,7 @@ export default function CasesPage() {
             className="block bg-[#0A0A0A] border border-white/5 rounded-2xl p-6 md:p-8 hover:bg-[#111111] hover:border-white/10 transition-all group relative overflow-hidden"
           >
             <div className="flex justify-between items-start mb-4">
-              <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%]">
+              <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%] text-white">
                 {c.title}
               </h3>
               <ChevronRight className="h-5 w-5 text-zinc-700 group-hover:text-primary transition-colors mt-1" />
@@ -183,7 +180,6 @@ export default function CasesPage() {
               ))}
             </div>
             
-            {/* Subtle light effect on hover */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           </Link>
         ))}
