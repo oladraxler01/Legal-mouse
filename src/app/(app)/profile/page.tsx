@@ -63,35 +63,70 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error("Auth error:", authError);
+        setLoading(false);
+        return;
+      }
 
       if (user) {
         setUserEmail(user.email || "");
         
-        // Fetch Profile
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+        try {
+          // Fetch Profile
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
 
-        if (profileData) {
-          setProfile(profileData);
-          setFormData({
-            full_name: profileData.full_name || "",
-            role: profileData.role || "Law Student",
-            year_of_study: profileData.year_of_study || "Year 2"
-          });
+          if (profileError) {
+            console.error("Profile fetch error:", profileError);
+            // If no profile found, initialize with defaults
+            if (profileError.code === 'PGRST116') { // code for no rows returned
+              const defaultProfile: Profile = {
+                id: user.id,
+                full_name: user.user_metadata?.full_name || "New Student",
+                role: "Law Student",
+                year_of_study: "Year 1",
+                current_streak: 0,
+                contributions: 0,
+                reputation: 0,
+                questions_asked: 0,
+                answers_given: 0,
+                notes_read: 0,
+                cases_reviewed: 0
+              };
+              setProfile(defaultProfile);
+              setFormData({
+                full_name: defaultProfile.full_name,
+                role: defaultProfile.role,
+                year_of_study: defaultProfile.year_of_study
+              });
+            }
+          } else if (profileData) {
+            setProfile(profileData);
+            setFormData({
+              full_name: profileData.full_name || "",
+              role: profileData.role || "Law Student",
+              year_of_study: profileData.year_of_study || "Year 2"
+            });
+          }
+
+          // Fetch Saved Resources
+          const { data: saved, error: savedError } = await supabase
+            .from("saved_resources")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false });
+
+          if (savedError) console.error("Saved resources fetch error:", savedError);
+          setSavedResources(saved || []);
+        } catch (err) {
+          console.error("Unexpected error:", err);
         }
-
-        // Fetch Saved Resources
-        const { data: saved } = await supabase
-          .from("saved_resources")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        setSavedResources(saved || []);
       }
       setLoading(false);
     }
