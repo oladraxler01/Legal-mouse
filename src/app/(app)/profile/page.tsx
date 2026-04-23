@@ -103,7 +103,8 @@ export default function ProfilePage() {
             
             // Handle error gracefully - including 406 which often means RLS or missing columns
             const isNoRows = profileError.code === 'PGRST116';
-            const isRLSOrSchemaError = profileError.status === 406 || profileError.code === 'PGRST105';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isRLSOrSchemaError = (profileError as any).status === 406 || profileError.code === 'PGRST105';
 
             if (isNoRows || isRLSOrSchemaError) {
               const defaultProfile: Profile = {
@@ -135,10 +136,14 @@ export default function ProfilePage() {
               current_streak: profileData.current_streak || 0,
               notes_read: profileData.notes_read || 0,
               cases_reviewed: profileData.cases_reviewed || 0,
-              contributions: profileData.contributions || 0,
-              reputation: profileData.reputation || 0,
-              questions_asked: profileData.questions_asked || 0,
-              answers_given: profileData.answers_given || 0
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              contributions: (profileData as any).contributions || 0,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              reputation: (profileData as any).reputation || 0,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              questions_asked: (profileData as any).questions_asked || 0,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              answers_given: (profileData as any).answers_given || 0
             } as Profile);
             setFormData({
               full_name: profileData.full_name || "",
