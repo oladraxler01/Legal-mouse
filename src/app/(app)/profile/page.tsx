@@ -45,6 +45,20 @@ interface SavedResource {
 const ROLES = ['Law Student', 'Lawyer', 'Professor'];
 const YEARS = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Postgraduate'];
 
+interface DbProfile {
+  id: string;
+  full_name: string | null;
+  role: string | null;
+  year_of_study: string | null;
+  current_streak: number | null;
+  notes_read: number | null;
+  cases_reviewed: number | null;
+  contributions?: number | null;
+  reputation?: number | null;
+  questions_asked?: number | null;
+  answers_given?: number | null;
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,17 +89,23 @@ export default function ProfilePage() {
         setUserEmail(user.email || "");
         
         try {
-          // Fetch Profile
-          const { data: profileData, error: profileError } = await supabase
+          // Fetch Profile 
+          const { data, error: profileError } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id, full_name, role, year_of_study, current_streak, notes_read, cases_reviewed")
             .eq("id", user.id)
             .single();
 
+          const profileData = data as DbProfile | null;
+
           if (profileError) {
-            console.error("Profile fetch error:", profileError);
-            // If no profile found, initialize with defaults
-            if (profileError.code === 'PGRST116') { // code for no rows returned
+            console.error("Profile fetch error detail:", JSON.stringify(profileError, null, 2));
+            
+            // Handle error gracefully - including 406 which often means RLS or missing columns
+            const isNoRows = profileError.code === 'PGRST116';
+            const isRLSOrSchemaError = profileError.status === 406 || profileError.code === 'PGRST105';
+
+            if (isNoRows || isRLSOrSchemaError) {
               const defaultProfile: Profile = {
                 id: user.id,
                 full_name: user.user_metadata?.full_name || "New Student",
@@ -107,7 +127,19 @@ export default function ProfilePage() {
               });
             }
           } else if (profileData) {
-            setProfile(profileData);
+            setProfile({
+              ...profileData,
+              full_name: profileData.full_name || "New Student",
+              role: profileData.role || "Law Student",
+              year_of_study: profileData.year_of_study || "Year 2",
+              current_streak: profileData.current_streak || 0,
+              notes_read: profileData.notes_read || 0,
+              cases_reviewed: profileData.cases_reviewed || 0,
+              contributions: profileData.contributions || 0,
+              reputation: profileData.reputation || 0,
+              questions_asked: profileData.questions_asked || 0,
+              answers_given: profileData.answers_given || 0
+            } as Profile);
             setFormData({
               full_name: profileData.full_name || "",
               role: profileData.role || "Law Student",
@@ -139,25 +171,36 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          role: formData.role,
-          year_of_study: formData.year_of_study
-        })
-        .eq("id", user.id);
-
-      if (!error) {
-        if (profile) {
-          setProfile({
-            ...profile,
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .upsert({
+            id: user.id,
             full_name: formData.full_name,
             role: formData.role,
-            year_of_study: formData.year_of_study
-          });
+            year_of_study: formData.year_of_study,
+            // Keep existing values or default to 0 for new records
+            current_streak: profile?.current_streak || 0,
+            notes_read: profile?.notes_read || 0,
+            cases_reviewed: profile?.cases_reviewed || 0
+          })
+          .eq("id", user.id);
+
+        if (error) {
+          console.error("Profile save error detail:", JSON.stringify(error, null, 2));
+        } else {
+          if (profile) {
+            setProfile({
+              ...profile,
+              full_name: formData.full_name,
+              role: formData.role,
+              year_of_study: formData.year_of_study
+            });
+          }
+          setIsEditing(false);
         }
-        setIsEditing(false);
+      } catch (err) {
+        console.error("Unexpected save error:", err);
       }
     }
     setSaving(false);

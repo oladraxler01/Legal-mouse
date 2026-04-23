@@ -86,7 +86,7 @@ export default async function DashboardPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight mb-1 text-on-surface">Legal Mouse</h1>
           <div className="flex items-center gap-3">
             <p className="font-body text-on-surface-variant/70 text-sm">Welcome back, {user.name}</p>
-            {user.streak > 0 && (
+            {user.streak >= 0 && (
               <div className="flex items-center gap-1.5 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20 group animate-pulse hover:animate-none transition-all">
                 <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500" />
                 <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tight">{user.streak} Day Streak</span>
