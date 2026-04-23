@@ -16,7 +16,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#000000]/80 backdrop-blur-3xl border-t border-white/5">
+    <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-3xl border-t border-outline-variant/10 transition-colors duration-300">
       <div className="flex items-center justify-around py-3 px-2">
         {navLinks.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
@@ -28,8 +28,8 @@ export default function BottomNav() {
                 isActive ? "text-primary scale-110" : "text-on-surface-variant/50"
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-on-surface-variant/40"}`} />
-              <span className={`text-[10px] font-label font-bold tracking-wider uppercase ${isActive ? "opacity-100" : "opacity-0"}`}>
+              <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-on-surface-variant/40 hover:text-on-surface"}`} />
+              <span className={`text-[10px] font-label font-bold tracking-wider uppercase transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-0"}`}>
                 {label}
               </span>
             </Link>
