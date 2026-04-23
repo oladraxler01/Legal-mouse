@@ -6,7 +6,8 @@ import {
   Scale, 
   ChevronRight, 
   Filter,
-  Book
+  Book,
+  Plus
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -114,9 +115,18 @@ export default function CasesPage() {
   return (
     <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32 transition-colors duration-300">
       {/* Header */}
-      <header className="mb-10">
-        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-on-surface">Case Law Library</h1>
-        <p className="font-body text-on-surface-variant text-lg opacity-70">Search landmark judgments</p>
+      <header className="flex justify-between items-start mb-10">
+        <div>
+          <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-on-surface">Case Law Library</h1>
+          <p className="font-body text-on-surface-variant text-lg opacity-70">Search landmark judgments</p>
+        </div>
+        <Link 
+          href="/contribute"
+          className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-all border border-primary/5"
+          title="Contribute Case"
+        >
+          <Plus className="w-5 h-5" />
+        </Link>
       </header>
 
       {/* Search Bar */}

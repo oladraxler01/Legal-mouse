@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -8,7 +7,9 @@ import {
   MoreVertical, 
   ArrowLeft,
   Users,
-  LogOut
+  LogOut,
+  Share2,
+  Check
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -29,6 +30,14 @@ interface Member {
   is_online: boolean;
 }
 
+interface GroupMessage {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  group_id: string;
+}
+
 export default function GroupChatPage() {
   const params = useParams();
   const groupId = params.id as string;
@@ -37,76 +46,82 @@ export default function GroupChatPage() {
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState("Loading...");
+  const [showShareAlert, setShowShareAlert] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const supabase = createClient();
+    
     const fetchInitialData = async () => {
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setCurrentUserId(user.id);
 
-      // Fetch Group Info
+      // 1. Fetch Group Info
       const { data: group } = await supabase
         .from("study_groups")
         .select("name")
         .eq("id", groupId)
         .single();
+      
       if (group) setGroupName(group.name);
+      else setGroupName("Study Group"); // Fallback
 
-      // Fetch Members
+      // 2. Fetch Members
       const { data: memberData } = await supabase
         .from("group_members")
         .select("profiles(id, full_name, year_of_study)")
         .eq("group_id", groupId);
 
       if (memberData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setMembers(memberData.map((m: any) => ({
-          id: (m as any).profiles.id,
-          full_name: (m as any).profiles.full_name,
-          year_of_study: (m as any).profiles.year_of_study,
-          is_online: true // Mocked
+          id: m.profiles.id,
+          full_name: m.profiles.full_name,
+          year_of_study: m.profiles.year_of_study,
+          is_online: true
         })));
       }
 
-      // Fetch Messages history
-      const { data: messageData } = await supabase
+      // 3. Logic Task 2: Fetch last 50 messages
+      const { data: messageData, error: msgError } = await supabase
         .from("group_messages")
-        .select(`
-          id, 
-          content, 
-          created_at, 
-          sender_id,
-          profiles(full_name)
-        `)
+        .select(`id, content, created_at, user_id`)
         .eq("group_id", groupId)
         .order("created_at", { ascending: true })
         .limit(50);
 
-      if (messageData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (msgError) {
+        console.error("Error fetching messages:", msgError);
+      } else if (messageData && messageData.length > 0) {
+        const userIds = Array.from(new Set(messageData.map(m => m.user_id)));
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+          acc[p.id] = p.full_name;
+          return acc;
+        }, {});
+
         setMessages(messageData.map((m: any) => ({
           id: m.id,
           content: m.content,
           created_at: m.created_at,
-          sender_id: m.sender_id,
-          sender_name: (m as any).profiles.full_name
+          sender_id: m.user_id,
+          sender_name: profileMap[m.user_id] || "Unknown User"
         })));
       } else {
-        // Mock some history if empty
         setMessages([
-          { id: "m1", content: "Hey everyone! Does anyone have notes on the Donoghue v Stevenson ratio?", created_at: new Date().toISOString(), sender_id: "other1", sender_name: "Sarah Jenkins" },
-          { id: "m2", content: "I have the summary from last week's lecture, sending it now.", created_at: new Date().toISOString(), sender_id: "other2", sender_name: "Mark Wood" },
+          { id: "00000000-0000-0000-0000-000000000003", content: "Welcome to the group! Let's start discussing legal cases.", created_at: new Date().toISOString(), sender_id: "system", sender_name: "Legal Mouse" },
         ]);
       }
     };
 
     fetchInitialData();
-    const supabase = createClient();
     
-    // Subscribe to messages
+    // 4. Realtime Subscription
     const channel = supabase
-      .channel(`group:${groupId}`)
+      .channel(`group-chat:${groupId}`)
       .on(
         "postgres_changes",
         {
@@ -115,15 +130,24 @@ export default function GroupChatPage() {
           table: "group_messages",
           filter: `group_id=eq.${groupId}`,
         },
-        (payload) => {
-          const newMessage = payload.new as { id: string; content: string; created_at: string; sender_id: string };
+        async (payload) => {
+          const newMessage = payload.new as GroupMessage;
+          
+          // Fetch sender name for the new message
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", newMessage.user_id)
+            .single();
+
           setMessages((prev) => [...prev, {
             id: newMessage.id,
             content: newMessage.content,
             created_at: newMessage.created_at,
-            sender_id: newMessage.sender_id,
-            sender_name: "User" 
+            sender_id: newMessage.user_id,
+            sender_name: profile?.full_name || "New Member"
           }]);
+          scrollToBottom();
         }
       )
       .subscribe();
@@ -137,45 +161,73 @@ export default function GroupChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!message.trim() || !currentUserId) return;
+
+    const currentMsg = message;
+    setMessage(""); // Optimistic clear
 
     const supabase = createClient();
     const { error } = await supabase
       .from("group_messages")
       .insert({
         group_id: groupId,
-        sender_id: currentUserId,
-        content: message.trim()
+        user_id: currentUserId,
+        content: currentMsg.trim()
       });
 
-    if (error) console.error("Error sending message:", error);
-    else setMessage("");
+    if (error) {
+      console.error("Error sending message:", error);
+      alert(`Failed to send message: ${error.message || 'Database error'}. Make sure you are a member of this group.`);
+      setMessage(currentMsg); // Restore on error
+    } else {
+      scrollToBottom();
+    }
+  };
+
+  const handleShareLink = () => {
+    const url = `${window.location.origin}/groups/${groupId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShowShareAlert(true);
+      setTimeout(() => setShowShareAlert(false), 2000);
+    });
   };
 
   return (
-    <div className="flex h-screen bg-[#000000] text-white overflow-hidden">
+    <div className="flex h-screen bg-surface text-on-surface overflow-hidden">
       {/* Main Chat Column */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-900">
+      <div className="flex-1 flex flex-col min-w-0 border-r border-outline-variant/10">
         {/* Chat Header */}
-        <header className="h-16 flex items-center justify-between px-6 bg-[#0A0A0A] border-b border-zinc-900 shrink-0">
+        <header className="h-20 flex items-center justify-between px-6 bg-surface-container border-b border-outline-variant/10 shrink-0">
           <div className="flex items-center gap-4">
-            <Link href="/groups" className="p-2 hover:bg-zinc-800 rounded-full transition-colors">
+            <Link href="/groups" className="p-2.5 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h2 className="font-bold text-lg leading-tight">{groupName}</h2>
-              <p className="text-xs text-[#7C3AED] font-medium uppercase tracking-wider">Online</p>
+              <h2 className="font-headline font-bold text-xl leading-tight text-on-surface">{groupName}</h2>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Active Discussion</p>
+              </div>
             </div>
           </div>
-          <button className="p-2 hover:bg-zinc-800 rounded-full transition-colors">
-            <MoreVertical className="w-5 h-5 text-zinc-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleShareLink}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs font-bold transition-all border border-primary/10"
+            >
+              {showShareAlert ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+              {showShareAlert ? "Copied!" : "Share Link"}
+            </button>
+            <button className="p-2.5 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#0A0A0A] to-[#000000]">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-surface">
           {messages.map((m) => {
             const isMine = m.sender_id === currentUserId;
             return (
@@ -184,19 +236,19 @@ export default function GroupChatPage() {
                 className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}
               >
                 {!isMine && (
-                  <span className="text-xs text-zinc-500 mb-1 ml-1 font-medium">{m.sender_name}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/40 mb-1.5 ml-1">{m.sender_name}</span>
                 )}
                 <div 
-                  className={`max-w-[70%] p-4 rounded-2xl shadow-lg relative ${
+                  className={`max-w-[80%] md:max-w-[70%] p-5 rounded-2xl shadow-sm relative ${
                     isMine 
-                      ? "bg-[#7C3AED] text-white rounded-tr-none" 
-                      : "bg-[#1A1A1A] text-zinc-200 rounded-tl-none"
+                      ? "bg-primary text-white rounded-tr-none" 
+                      : "bg-surface-container-high text-on-surface rounded-tl-none border border-outline-variant/5"
                   }`}
                 >
-                  <p className="font-serif leading-relaxed text-[17px] tracking-wide" style={{ fontFamily: 'var(--font-crimson)' }}>
+                  <p className="font-serif leading-relaxed text-lg" style={{ fontFamily: 'var(--font-crimson)' }}>
                     {m.content}
                   </p>
-                  <span className={`text-[10px] mt-2 block opacity-50 ${isMine ? "text-right" : "text-left"}`}>
+                  <span className={`text-[9px] font-bold mt-2.5 block opacity-40 uppercase tracking-tighter ${isMine ? "text-right" : "text-left"}`}>
                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -207,9 +259,12 @@ export default function GroupChatPage() {
         </div>
 
         {/* Message Input */}
-        <div className="p-4 bg-[#0A0A0A] border-t border-zinc-900 shrink-0">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-4 max-w-6xl mx-auto">
-            <button type="button" className="p-3 hover:bg-zinc-800 rounded-xl text-zinc-500 transition-colors">
+        <div className="p-6 bg-surface-container border-t border-outline-variant/10 shrink-0">
+          <form 
+            onSubmit={handleSendMessage} 
+            className="flex items-center gap-4 max-w-5xl mx-auto"
+          >
+            <button type="button" className="p-3.5 hover:bg-surface-container-high rounded-2xl text-on-surface-variant transition-colors border border-outline-variant/10">
               <Paperclip className="w-5 h-5" />
             </button>
             <div className="flex-1 relative">
@@ -217,13 +272,20 @@ export default function GroupChatPage() {
                 type="text" 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="w-full bg-[#000000] border border-zinc-800 rounded-xl py-3.5 px-5 text-sm outline-none focus:border-[#7C3AED]/50 transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder="Share your legal insights..."
+                className="w-full bg-surface-container-lowest border border-outline-variant/10 rounded-2xl py-4.5 px-6 text-[15px] outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all text-on-surface"
               />
             </div>
             <button 
               type="submit" 
-              className="p-3.5 bg-[#7C3AED] hover:bg-[#6D28D9] rounded-xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
+              disabled={!message.trim()}
+              className="p-4 bg-primary hover:bg-primary-container rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
             >
               <Send className="w-5 h-5 text-white" />
             </button>
@@ -232,41 +294,44 @@ export default function GroupChatPage() {
       </div>
 
       {/* Sidebar - Desktop Only */}
-      <div className="hidden lg:flex w-80 flex-col bg-[#0A0A0A] shrink-0">
-        <div className="p-8 border-b border-zinc-900">
-          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-zinc-500 mb-6 text-center">About Group</h3>
+      <div className="hidden lg:flex w-85 flex-col bg-surface-container-low shrink-0 border-l border-outline-variant/5">
+        <div className="p-10 border-b border-outline-variant/10">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-on-surface-variant/40 mb-8 text-center">Study Group</h3>
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-3xl bg-[#1A1A1A] flex items-center justify-center text-[#7C3AED] mb-4 shadow-2xl">
+            <div className="w-24 h-24 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-xl border border-primary/5">
               <Users className="w-10 h-10" />
             </div>
-            <h2 className="font-bold text-xl mb-1">{groupName}</h2>
-            <p className="text-sm text-zinc-500 mb-6">{members.length} Members total</p>
-            <button className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-red-500/20 text-red-500 text-sm font-bold hover:bg-red-500/10 transition-all">
+            <h2 className="font-headline font-bold text-2xl mb-2 text-on-surface">{groupName}</h2>
+            <p className="text-sm font-body text-on-surface-variant/60 mb-8">{members.length} Intellectuals active</p>
+            <button className="flex items-center gap-3 px-8 py-3 rounded-full border border-outline-variant/20 text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-all">
               <LogOut className="w-4 h-4" />
               Leave Group
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-600 mb-4 px-4">Members</h3>
-          <div className="space-y-1">
+        <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
+          <div className="flex items-center justify-between mb-6 px-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/30">Members List</h3>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{members.length}</span>
+          </div>
+          <div className="space-y-2">
             {members.map((member) => (
               <div 
                 key={member.id} 
-                className="flex items-center gap-4 p-4 hover:bg-zinc-800/50 rounded-2xl transition-all group"
+                className="flex items-center gap-4 p-4 hover:bg-surface-container rounded-2xl transition-all group border border-transparent hover:border-outline-variant/10"
               >
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-[#1A1A1A] flex items-center justify-center font-bold text-sm text-[#7C3AED] border border-zinc-800">
+                  <div className="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center font-headline font-bold text-sm text-primary border border-outline-variant/10">
                     {member.full_name.charAt(0)}
                   </div>
                   {member.is_online && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0A0A0A]" />
+                    <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-surface-container-low shadow-sm" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold truncate">{member.full_name}</h4>
-                  <span className="inline-block bg-[#7C3AED]/10 text-[#7C3AED] text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter mt-1">
+                  <h4 className="text-sm font-bold truncate text-on-surface">{member.full_name}</h4>
+                  <span className="inline-block text-[9px] font-bold text-on-surface-variant/40 uppercase tracking-tighter mt-0.5">
                     {member.year_of_study}
                   </span>
                 </div>
