@@ -67,8 +67,8 @@ export default async function DashboardPage() {
     { title: "AI Assistant", icon: MessageSquare, href: "/assistant" },
     { title: "Smart Notes", icon: FileText, href: "/notes" },
     { title: "Case Law", icon: Scale, href: "/cases" },
-    { title: "Study Groups", icon: Users, href: "/community" },
-    { title: "Q&A Forum", icon: HelpCircle, href: "/forum" },
+    { title: "Study Groups", icon: Users, href: "/groups" },
+    { title: "Q&A Forum", icon: HelpCircle, href: "/community" },
     { title: "Contribute", icon: Upload, href: "/contribute" },
   ];
 
