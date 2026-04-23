@@ -88,10 +88,10 @@
 
   /* Fonts */
   --font-headline: var(--font-manrope), sans-serif;
-  --font-body: var(--font-newsreader), serif;
+  --font-body: var(--font-inter), sans-serif;
   --font-label: var(--font-inter), sans-serif;
   --font-sans: var(--font-inter), sans-serif;
-  --font-serif: var(--font-newsreader), serif;
+  --font-serif: var(--font-crimson), serif;
 }
 
 /* Tailwind v4 includes its own preflight reset — no manual reset needed */

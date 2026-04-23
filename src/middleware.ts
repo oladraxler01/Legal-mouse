@@ -39,13 +39,22 @@ export async function middleware(req: NextRequest) {
     req.nextUrl.pathname.startsWith(path)
   );
 
+  const authRoutes = ["/login", "/register"];
+  const isAuthRoute = authRoutes.some((path) =>
+    req.nextUrl.pathname.startsWith(path)
+  );
+
   if (isProtectedRoute && !session) {
     return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  if (isAuthRoute && session) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return res;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/notes/:path*", "/cases/:path*"],
+  matcher: ["/dashboard/:path*", "/notes/:path*", "/cases/:path*", "/login", "/register"],
 };

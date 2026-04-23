@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import React from "react";
-import { Manrope, Inter, Newsreader } from "next/font/google";
+import { Manrope, Inter, Crimson_Pro } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import "./globals.css";
 
@@ -16,8 +16,8 @@ const inter = Inter({
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const crimsonPro = Crimson_Pro({
+  variable: "--font-crimson",
   subsets: ["latin"],
   display: "swap",
 });
@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${inter.variable} ${newsreader.variable} h-full`}
+      className={`${manrope.variable} ${inter.variable} ${crimsonPro.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="min-h-full font-body antialiased bg-surface-container-lowest text-on-surface">
