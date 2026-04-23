@@ -156,14 +156,14 @@ export default function AssistantPage() {
                <HelpCircle className="w-6 h-6 text-on-surface-variant/20" />
                <input 
                 type="text" 
-                value={input}
+                value={input || ''}
                 onChange={handleInputChange}
                 placeholder="Ask a legal question..." 
                 className="flex-1 bg-transparent border-none outline-none text-on-surface text-base font-body placeholder:text-on-surface-variant/40"
                />
                <button 
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input?.trim()}
                 className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:shadow-none"
                >
                  <Send className="w-5 h-5" />

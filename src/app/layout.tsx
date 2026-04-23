@@ -39,13 +39,15 @@ export default function RootLayout({
       className={`${manrope.variable} ${inter.variable} ${crimsonPro.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="min-h-full font-body antialiased bg-surface-container-lowest text-on-surface">
+      <head>
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `try{if(localStorage.getItem('legal-mouse-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
           }}
         />
+      </head>
+      <body className="min-h-full font-body antialiased bg-surface-container-lowest text-on-surface">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
