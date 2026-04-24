@@ -15,6 +15,8 @@ const navLinks = [
 export default function BottomNav() {
   const pathname = usePathname();
 
+  if (pathname === '/assistant') return null;
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-3xl border-t border-outline-variant/10 transition-colors duration-300">
       <div className="flex items-center justify-around py-3 px-2">

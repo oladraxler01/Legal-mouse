@@ -18,6 +18,7 @@ import { useEffect, useRef } from "react";
 
 export default function AssistantPage() {
   const { messages, input, handleInputChange, handleSubmit, setInput, append } = useChat();
+  console.log("Assistant Chat State:", { input, handleInputChange: !!handleInputChange, messagesCount: messages.length });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,7 +47,7 @@ export default function AssistantPage() {
       {/* Header */}
       <header className="h-20 flex items-center justify-between px-6 bg-surface-container border-b border-outline-variant/10 shrink-0 z-10">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="p-2.5 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
+          <Link href="/dashboard" className="p-2.5 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant md:hidden">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-3">
