@@ -17,5 +17,5 @@ export async function POST(req: Request) {
     Use a professional yet accessible tone.`,
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

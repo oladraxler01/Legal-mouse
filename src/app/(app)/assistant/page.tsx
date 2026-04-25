@@ -14,10 +14,23 @@ import {
   HelpCircle
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function AssistantPage() {
-  const { messages, input, handleInputChange, handleSubmit, setInput, append } = useChat();
+  const { messages, sendMessage } = useChat();
+  const [input, setInput] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = (e?: { preventDefault?: () => void }) => {
+    e?.preventDefault?.();
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput('');
+  };
+
   console.log("Assistant Chat State:", { input, handleInputChange: !!handleInputChange, messagesCount: messages.length });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,10 +49,7 @@ export default function AssistantPage() {
   ];
 
   const handleSuggestionClick = (suggestion: string) => {
-    append({
-      role: 'user',
-      content: suggestion,
-    });
+    sendMessage({ text: suggestion });
   };
 
   return (
@@ -119,7 +129,15 @@ export default function AssistantPage() {
                   className={`leading-relaxed text-lg whitespace-pre-wrap ${!isUser ? "font-serif" : "font-body"}`}
                   style={!isUser ? { fontFamily: 'var(--font-crimson)' } : {}}
                 >
-                  {m.content}
+                  {m.parts.map((part, index) => {
+                    if (part.type === 'text') {
+                      return <span key={index}>{part.text}</span>;
+                    }
+                    if (part.type === 'reasoning') {
+                      return <span key={index} className="italic text-on-surface-variant/60">{part.text}</span>;
+                    }
+                    return null;
+                  })}
                 </div>
               </div>
             </div>
