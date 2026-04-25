@@ -122,7 +122,7 @@ export default function AssistantPage() {
                 className={`max-w-[85%] md:max-w-[75%] p-6 rounded-2xl shadow-sm ${
                   isUser 
                     ? "bg-primary text-white rounded-tr-none" 
-                    : "bg-[#0A0A0A] text-on-surface rounded-tl-none border border-outline-variant/10"
+                    : "bg-surface-container-high text-on-surface rounded-tl-none border border-outline-variant/10"
                 }`}
               >
                 <div 
@@ -171,7 +171,7 @@ export default function AssistantPage() {
             className="relative group h-[72px]"
           >
             <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-xl opacity-0 group-focus-within:opacity-40 transition-opacity" />
-            <div className="relative h-full bg-[#0A0A0A] border border-outline-variant/10 rounded-3xl flex items-center px-6 gap-4 shadow-2xl transition-all focus-within:border-primary/50">
+            <div className="relative h-full bg-surface-container-high border border-outline-variant/10 rounded-3xl flex items-center px-6 gap-4 shadow-2xl transition-all focus-within:border-primary/50">
                <HelpCircle className="w-6 h-6 text-on-surface-variant/20" />
                <input 
                 type="text" 

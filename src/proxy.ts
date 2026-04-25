@@ -34,7 +34,7 @@ export async function proxy(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const protectedRoutes = ["/dashboard", "/notes", "/cases"];
+  const protectedRoutes = ["/dashboard", "/notes", "/"];
   const isProtectedRoute = protectedRoutes.some((path) =>
     req.nextUrl.pathname.startsWith(path)
   );
