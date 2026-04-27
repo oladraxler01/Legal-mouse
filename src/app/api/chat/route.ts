@@ -36,6 +36,7 @@ export async function POST(req: Request) {
   return result.toUIMessageStreamResponse({
     onError: (error) => {
       console.error('Chat API Error:', error);
+      return 'An unexpected error occurred processing your request.';
     }
   });
 }
