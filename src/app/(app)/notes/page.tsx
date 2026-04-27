@@ -6,7 +6,8 @@ import {
   Folder, 
   ChevronRight, 
   CheckCircle2, 
-  Book
+  Book,
+  PlaySquare
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -143,12 +144,11 @@ export default function NotesPage() {
 
             <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl overflow-hidden divide-y divide-outline-variant/10 shadow-sm">
               {course.topics.map((topic) => (
-                <Link 
+                <div 
                   key={topic.id}
-                  href={`/notes/topic/${topic.id}`}
                   className="flex items-center justify-between p-6 hover:bg-surface-container-low transition-all group"
                 >
-                  <div className="flex flex-col gap-1">
+                  <Link href={`/notes/topic/${topic.id}`} className="flex-1 flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <span className="font-headline font-bold text-lg text-on-surface group-hover:text-primary transition-colors">{topic.name}</span>
                       {topic.is_verified && (
@@ -159,9 +159,18 @@ export default function NotesPage() {
                       )}
                     </div>
                     <p className="text-sm font-label text-on-surface-variant/60">{topic.note_count} notes available</p>
+                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link 
+                      href={`/videos?play=${topic.id}`}
+                      className="flex items-center gap-2 bg-[#3D1F5C] text-[#DCB8FF] text-xs font-bold uppercase px-4 py-2 rounded-xl border border-primary/20 hover:bg-primary/20 hover:text-white transition-all duration-300 shadow-sm"
+                    >
+                      <PlaySquare className="h-3.5 w-3.5" />
+                      Watch Animation
+                    </Link>
+                    <ChevronRight className="h-5 w-5 text-on-surface-variant/20 group-hover:text-primary transition-colors" />
                   </div>
-                  <ChevronRight className="h-5 w-5 text-on-surface-variant/20 group-hover:text-primary transition-colors" />
-                </Link>
+                </div>
               ))}
             </div>
           </section>

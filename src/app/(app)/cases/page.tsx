@@ -7,7 +7,8 @@ import {
   ChevronRight, 
   Filter,
   Book,
-  Plus
+  Plus,
+  PlaySquare
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -163,21 +164,32 @@ export default function CasesPage() {
       {/* Case List */}
       <div className="space-y-6">
         {filteredCases.map((c) => (
-          <Link 
+          <div 
             key={c.id}
-            href={`/cases/${c.id}`}
             className="block bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 md:p-8 hover:bg-surface-container-low hover:border-primary/30 transition-all group relative overflow-hidden shadow-sm"
           >
             <div className="flex justify-between items-start mb-4">
-              <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%] text-on-surface">
-                {c.title}
-              </h3>
+              <Link href={`/cases/${c.id}`} className="flex-1">
+                <h3 className="font-headline text-xl md:text-2xl font-bold group-hover:text-primary transition-colors max-w-[90%] text-on-surface">
+                  {c.title}
+                </h3>
+              </Link>
               <ChevronRight className="h-5 w-5 text-on-surface-variant/20 group-hover:text-primary transition-colors mt-1" />
             </div>
 
-            <div className="flex items-center gap-2 text-on-surface-variant/60 text-sm mb-6">
-              <Scale className="h-4 w-4" />
-              <span className="font-label font-medium">{c.court} • {c.year}</span>
+            <div className="flex items-center justify-between text-on-surface-variant/60 text-sm mb-6">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4" />
+                <span className="font-label font-medium">{c.court} • {c.year}</span>
+              </div>
+              
+              <Link 
+                href={`/videos?play=${c.topic.id}`}
+                className="flex items-center gap-2 bg-[#3D1F5C] text-[#DCB8FF] text-xs font-bold uppercase px-4 py-2 rounded-xl border border-primary/20 hover:bg-primary/20 hover:text-white transition-all duration-300 shadow-sm z-10"
+              >
+                <PlaySquare className="h-3.5 w-3.5" />
+                Watch Animation
+              </Link>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -192,7 +204,7 @@ export default function CasesPage() {
             </div>
             
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-          </Link>
+          </div>
         ))}
 
         {filteredCases.length === 0 && !loading && (

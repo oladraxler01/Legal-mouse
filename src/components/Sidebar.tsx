@@ -10,7 +10,8 @@ import {
   Users, 
   UserCircle,
   Sun,
-  Moon
+  Moon,
+  PlaySquare
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
@@ -19,6 +20,7 @@ const navLinks = [
   { href: "/assistant", label: "Assistant", icon: MessageSquare },
   { href: "/notes", label: "Notes", icon: FileText },
   { href: "/cases", label: "Cases", icon: Scale },
+  { href: "/videos", label: "Video Vault", icon: PlaySquare },
   { href: "/community", label: "Community", icon: Users },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
