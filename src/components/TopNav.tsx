@@ -21,7 +21,7 @@ export default function TopNav() {
     <nav className="sticky top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-outline-variant/10 transition-colors duration-300">
       <div className="flex h-20 items-center px-8 w-full max-w-screen-2xl mx-auto relative relative">
         {/* Left: Logo */}
-        <div className="w-1/4 flex items-center">
+        <div className="w-1/4 flex items-center z-20">
           <Link
             href="/"
             className="text-2xl font-bold tracking-tight text-on-surface font-headline"
@@ -51,7 +51,7 @@ export default function TopNav() {
         </div>
 
         {/* Right: Auth & Toggles */}
-        <div className="flex w-1/4 justify-end items-center gap-6 ml-auto">
+        <div className="flex w-1/4 justify-end items-center gap-6 ml-auto z-20">
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
@@ -66,7 +66,7 @@ export default function TopNav() {
           
           <Link
             href="/login"
-            className="hidden md:block font-label text-sm text-zinc-900 font-medium tracking-wide hover:text-primary transition-colors"
+            className="hidden md:block font-label text-sm text-zinc-900 dark:text-zinc-100 font-medium tracking-wide hover:text-primary transition-colors"
           >
             Login
           </Link>
