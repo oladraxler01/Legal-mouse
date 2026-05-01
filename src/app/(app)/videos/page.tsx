@@ -146,7 +146,22 @@ export default function VideoGallery() {
     if (typeof window !== "undefined" && videos.length > 0) {
       const params = new URLSearchParams(window.location.search);
       const autoPlayTopicId = params.get("play");
-      if (autoPlayTopicId) {
+      const ytId = params.get("yt");
+      const title = params.get("title");
+      
+      if (ytId) {
+        setSelectedVideo({
+          id: "dynamic-video",
+          title: title || "Case Animation",
+          description: "Auto-generated visualization from authorities.",
+          duration: "N/A",
+          thumbnail_url: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`,
+          video_url: "",
+          youtube_id: ytId,
+          topic_id: "dynamic",
+          course_name: "Legal Case Study"
+        });
+      } else if (autoPlayTopicId) {
         const videoToPlay = videos.find(v => v.topic_id === autoPlayTopicId);
         if (videoToPlay) {
           setSelectedVideo(videoToPlay);
