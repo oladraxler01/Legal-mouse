@@ -109,11 +109,11 @@ export default function NotesPage() {
   })).filter(course => course.topics.length > 0);
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-40 transition-colors duration-300">
+    <div className="min-h-screen bg-[#000000] text-on-surface p-6 md:p-12 pb-40 transition-colors duration-300">
       {/* Header */}
       <header className="mb-10">
-        <h1 className="font-headline text-4xl font-bold tracking-tight mb-2 text-on-surface">Smart Notes</h1>
-        <p className="font-body text-on-surface-variant text-lg opacity-70">Organized, verified legal knowledge</p>
+        <h1 className="font-serif text-5xl font-bold tracking-tight mb-2 text-white">Smart Notes</h1>
+        <p className="font-body text-gray-400 text-lg">Organized, verified legal knowledge</p>
       </header>
 
       {/* Search Bar */}
@@ -125,55 +125,36 @@ export default function NotesPage() {
           type="text" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search notes by topic..." 
-          className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-on-surface shadow-sm"
+          placeholder="Search courses..." 
+          className="w-full bg-[#0A0A0A] border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-base font-label focus:border-primary/50 transition-all outline-none text-white shadow-sm"
         />
       </div>
 
       {/* Course List */}
-      <div className="space-y-12">
-        {filteredCourses.map((course) => (
-          <section key={course.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center mb-6 px-2">
-              <div className="flex items-center gap-3">
-                <Folder className="h-5 w-5 text-primary" />
-                <h3 className="font-headline text-xl font-bold text-on-surface">{course.name}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredCourses.map((course, idx) => (
+          <Link
+            key={course.id}
+            href={`/notes/${course.id}`}
+            className="group block bg-[#0A0A0A] border border-white/10 hover:border-primary/50 rounded-2xl p-8 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 animate-in fade-in slide-in-from-bottom-4"
+            style={{ animationDelay: `${idx * 100}ms`, animationFillMode: "both" }}
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
+                <Folder className="h-6 w-6" />
               </div>
-              <span className="text-sm font-label text-on-surface-variant/40 font-bold uppercase tracking-wider">{course.topics.length} topics</span>
+              <span className="text-xs font-label text-gray-400 font-bold uppercase tracking-wider bg-white/5 px-3 py-1 rounded-full">
+                {course.topics.length} topics
+              </span>
             </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl overflow-hidden divide-y divide-outline-variant/10 shadow-sm">
-              {course.topics.map((topic) => (
-                <div 
-                  key={topic.id}
-                  className="flex items-center justify-between p-6 hover:bg-surface-container-low transition-all group"
-                >
-                  <Link href={`/notes/topic/${topic.id}`} className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-headline font-bold text-lg text-on-surface group-hover:text-primary transition-colors">{topic.name}</span>
-                      {topic.is_verified && (
-                        <span className="flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border border-primary/20">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Verified
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm font-label text-on-surface-variant/60">{topic.note_count} notes available</p>
-                  </Link>
-                  <div className="flex items-center gap-4">
-                    <Link 
-                      href={`/videos?play=${topic.id}`}
-                      className="flex items-center gap-2 bg-[#3D1F5C] text-[#DCB8FF] text-xs font-bold uppercase px-4 py-2 rounded-xl border border-primary/20 hover:bg-primary/20 hover:text-white transition-all duration-300 shadow-sm"
-                    >
-                      <PlaySquare className="h-3.5 w-3.5" />
-                      Watch Animation
-                    </Link>
-                    <ChevronRight className="h-5 w-5 text-on-surface-variant/20 group-hover:text-primary transition-colors" />
-                  </div>
-                </div>
-              ))}
+            
+            <h3 className="font-serif text-2xl font-bold text-white mb-2 group-hover:text-primary transition-colors">
+              {course.name}
+            </h3>
+            <div className="flex items-center gap-2 text-primary font-label text-sm mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              Explore Course <ChevronRight className="h-4 w-4" />
             </div>
-          </section>
+          </Link>
         ))}
 
         {filteredCourses.length === 0 && !loading && (

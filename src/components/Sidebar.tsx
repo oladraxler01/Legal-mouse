@@ -19,9 +19,10 @@ const navLinks = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/assistant", label: "Assistant", icon: MessageSquare },
   { href: "/notes", label: "Notes", icon: FileText },
-  { href: "/cases", label: "Cases", icon: Scale },
+  { href: "/authorities", label: "Authorities", icon: Scale },
   { href: "/videos", label: "Video Vault", icon: PlaySquare },
   { href: "/community", label: "Community", icon: Users },
+  { href: "/templates", label: "Templates", icon: FileText },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
