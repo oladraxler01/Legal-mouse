@@ -26,12 +26,12 @@ export default function AuthoritiesLandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#000000] text-on-surface p-6 md:p-12 pb-40">
+    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-40 transition-colors duration-300">
       <header className="mb-12 animate-in fade-in duration-700">
-        <h1 className="font-serif text-5xl font-extrabold tracking-tight mb-3 text-white">
+        <h1 className="font-serif text-5xl font-extrabold tracking-tight mb-3 text-on-surface">
           Authorities
         </h1>
-        <p className="font-body text-gray-400 text-lg">
+        <p className="font-body text-on-surface-variant text-lg">
           The definitive sources of legal intelligence, rigorously organized.
         </p>
       </header>
@@ -43,16 +43,16 @@ export default function AuthoritiesLandingPage() {
             <Link
               key={card.title}
               href={card.href}
-              className="group relative bg-[#0A0A0A] border border-white/10 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-start transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 animate-in fade-in slide-in-from-bottom-8"
+              className="group relative bg-surface-container border border-outline-variant/20 hover:border-primary/50 rounded-2xl p-8 flex flex-col items-start transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 animate-in fade-in slide-in-from-bottom-8"
               style={{ animationDelay: `${idx * 150}ms`, animationFillMode: "both" }}
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-8 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
                 <Icon className="h-7 w-7" />
               </div>
-              <h2 className="font-serif text-3xl font-bold text-white mb-4 group-hover:text-primary transition-colors duration-300">
+              <h2 className="font-serif text-3xl font-bold text-on-surface mb-4 group-hover:text-primary transition-colors duration-300">
                 {card.title}
               </h2>
-              <p className="font-body text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+              <p className="font-body text-on-surface-variant leading-relaxed group-hover:opacity-80 transition-opacity duration-300">
                 {card.description}
               </p>
             </Link>
