@@ -37,18 +37,24 @@ async function getDashboardData() {
     ? await supabase.from("profiles").select("current_streak").eq("id", userId).single()
     : { data: null };
 
-  const { data: cases } = await supabase
-    .from("cases")
-    .select("title, ratio_decidendi")
-    .eq("is_verified", true)
-    .limit(10);
+  // Fetch all legal insights to pick one for the day
+  const { data: insights } = await supabase
+    .from("legal_insights")
+    .select("latin_term, meaning, principle");
 
-  const dailyInsight = cases && cases.length > 0 
-    ? cases[Math.floor(Math.random() * cases.length)]
-    : {
-        title: "Doctrine of Promissory Estoppel",
-        ratio_decidendi: "A promise which the promisor should reasonably expect to induce action by the promisee, which does induce such action, is binding if injustice can only be avoided by enforcement."
-      };
+  let dailyInsight = {
+    latin_term: "Pacta Sunt Servanda",
+    meaning: "Agreements must be kept.",
+    principle: "The fundamental principle in international law that every treaty in force is binding upon the parties to it and must be performed by them in good faith."
+  };
+
+  if (insights && insights.length > 0) {
+    // Generate a consistent index for the day
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+    const seed = parseInt(today);
+    const index = seed % insights.length;
+    dailyInsight = insights[index];
+  }
 
   return {
     user: {
@@ -119,14 +125,19 @@ export default async function DashboardPage() {
                 <BookMarked className="h-4 w-4" />
                 Daily Legal Insight
               </div>
-              <h2 className="font-headline text-2xl md:text-3xl font-bold mb-4 leading-tight">
-                {dailyInsight.title}
+              <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                {dailyInsight.latin_term}
               </h2>
-              <p className="font-serif text-lg md:text-xl text-on-primary/90 leading-relaxed max-w-4xl mb-8">
-                {dailyInsight.ratio_decidendi}
-              </p>
-              <Link href="/cases" className="inline-flex items-center gap-2 text-sm font-bold border-b border-on-primary/30 pb-0.5 hover:border-on-primary transition-all">
-                Learn more <ArrowRight className="h-4 w-4" />
+              <div className="space-y-4 mb-8">
+                <p className="font-serif text-lg md:text-xl text-on-primary/90 leading-relaxed max-w-4xl italic">
+                  "{dailyInsight.meaning}"
+                </p>
+                <p className="font-body text-sm md:text-base text-on-primary/70 leading-relaxed max-w-3xl">
+                  {dailyInsight.principle}
+                </p>
+              </div>
+              <Link href="/authorities/blacks-law" className="inline-flex items-center gap-2 text-sm font-bold border-b border-on-primary/30 pb-0.5 hover:border-on-primary transition-all">
+                View Dictionary <ArrowRight className="h-4 w-4" />
               </Link>
            </div>
            <div className="absolute top-0 right-0 w-64 h-64 bg-on-primary/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-on-primary/20 transition-colors duration-500" />
