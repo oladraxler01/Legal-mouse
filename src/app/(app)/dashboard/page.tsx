@@ -136,8 +136,8 @@ export default async function DashboardPage() {
                   {dailyInsight.principle}
                 </p>
               </div>
-              <Link href="/authorities/blacks-law" className="inline-flex items-center gap-2 text-sm font-bold border-b border-on-primary/30 pb-0.5 hover:border-on-primary transition-all">
-                View Dictionary <ArrowRight className="h-4 w-4" />
+              <Link href="/insights" className="inline-flex items-center gap-2 text-sm font-bold border-b border-on-primary/30 pb-0.5 hover:border-on-primary transition-all">
+                View All Insights <ArrowRight className="h-4 w-4" />
               </Link>
            </div>
            <div className="absolute top-0 right-0 w-64 h-64 bg-on-primary/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-on-primary/20 transition-colors duration-500" />
