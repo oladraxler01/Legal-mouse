@@ -1,60 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, FileText, X } from "lucide-react";
+import { ArrowLeft, Search, FileText, ExternalLink } from "lucide-react";
+import { createClient } from "@/lib/supabase";
 
 interface Statute {
   id: string;
   title: string;
-  year: string;
-  category: string;
-  pdfUrl: string;
+  sub_type: string;
+  file_url: string;
+  created_at?: string;
 }
-
-const mockStatutes: Statute[] = [
-  {
-    id: "s1",
-    title: "Evidence Act",
-    year: "2011",
-    category: "Criminal",
-    pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-  },
-  {
-    id: "s2",
-    title: "Constitution of the Federal Republic",
-    year: "1999",
-    category: "Constitutional",
-    pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-  },
-  {
-    id: "s3",
-    title: "Labour Act",
-    year: "2004",
-    category: "Labour",
-    pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-  },
-  {
-    id: "s4",
-    title: "Criminal Code Act",
-    year: "1990",
-    category: "Criminal",
-    pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-  },
-];
-
-const categories = ["All", "Constitutional", "Criminal", "Labour", "Health", "Commercial"];
 
 export default function StatutesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const [statutes, setStatutes] = useState<Statute[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredStatutes = mockStatutes.filter((statute) => {
+  useEffect(() => {
+    async function fetchStatutes() {
+      setLoading(true);
+      const supabase = createClient();
+      
+      const { data, error } = await supabase
+        .from('authorities')
+        .select('*')
+        .eq('type', 'Statute');
+
+      if (!error && data) {
+        setStatutes(data);
+      }
+      setLoading(false);
+    }
+    
+    fetchStatutes();
+  }, []);
+
+  // Determine unique categories (sub_types) dynamically
+  const availableCategories = Array.from(
+    new Set(statutes.map(s => s.sub_type).filter(Boolean))
+  ).sort();
+  const categories = ["All", ...availableCategories];
+
+  const filteredStatutes = statutes.filter((statute) => {
     const matchesSearch = statute.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === "All" || statute.category === activeCategory;
+    const matchesCategory = activeCategory === "All" || statute.sub_type === activeCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Group filtered statutes by sub_type
+  const groupedStatutes = filteredStatutes.reduce((acc, statute) => {
+    const category = statute.sub_type || 'Uncategorized';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(statute);
+    return acc;
+  }, {} as Record<string, Statute[]>);
+
+  // Sort groups alphabetically
+  const sortedGroups = Object.keys(groupedStatutes).sort();
 
   return (
     <div className="min-h-screen bg-[#000000] text-white p-6 md:p-12 pb-40">
@@ -110,41 +117,56 @@ export default function StatutesPage() {
         </div>
       </div>
 
-      {/* Main List Area */}
+      {/* Main List Area with Groupings */}
       <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 delay-200">
-        {filteredStatutes.length > 0 ? (
-          <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
-            <div className="divide-y divide-white/10">
-              {filteredStatutes.map((statute) => (
-                <button
-                  key={statute.id}
-                  onClick={() => setSelectedPdf(statute.pdfUrl)}
-                  className="w-full text-left flex items-center justify-between p-5 hover:bg-white/5 transition-colors group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 group-hover:bg-primary/20 transition-all flex-shrink-0">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-serif text-xl font-bold text-white group-hover:text-primary transition-colors">
-                        {statute.title}
-                      </span>
-                      <span className="font-label text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">
-                        {statute.category} Law
-                      </span>
-                    </div>
+        {loading ? (
+          <div className="text-center py-20 text-gray-500 animate-pulse font-serif text-xl">
+            Loading statutory resources...
+          </div>
+        ) : filteredStatutes.length > 0 ? (
+          <div className="space-y-12">
+            {sortedGroups.map((group) => (
+              <div key={group} className="space-y-4">
+                <h2 className="font-serif text-2xl font-bold text-white border-b border-white/10 pb-2">
+                  {group} Statutes
+                </h2>
+                <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
+                  <div className="divide-y divide-white/10">
+                    {groupedStatutes[group].map((statute) => (
+                      <div
+                        key={statute.id}
+                        className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary transition-all flex-shrink-0">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-serif text-xl font-bold text-white">
+                              {statute.title}
+                            </span>
+                            <span className="font-label text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">
+                              {statute.sub_type || 'Uncategorized'} Law
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <a
+                            href={statute.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-primary font-label font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Open File
+                          </a>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-6">
-                    <span className="font-mono text-gray-400 font-medium text-sm">
-                      {statute.year}
-                    </span>
-                    <span className="text-primary text-sm font-label font-bold opacity-0 group-hover:opacity-100 transition-opacity hidden md:inline-block">
-                      View PDF
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           /* Empty State */
@@ -169,33 +191,6 @@ export default function StatutesPage() {
           </div>
         )}
       </div>
-
-      {/* PDF Modal */}
-      {selectedPdf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-10">
-          <div className="w-full h-full max-w-6xl bg-[#0A0A0A] border border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-white/10 bg-black/40">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-primary" />
-                <span className="font-serif text-lg font-bold text-white">Document Viewer</span>
-              </div>
-              <button
-                onClick={() => setSelectedPdf(null)}
-                className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="flex-1 bg-white">
-              <iframe
-                src={selectedPdf}
-                className="w-full h-full border-0"
-                title="PDF Viewer"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
