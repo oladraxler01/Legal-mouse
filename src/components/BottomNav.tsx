@@ -6,8 +6,8 @@ import { Home, FileText, Scale, Users, UserCircle } from "lucide-react";
 
 const navLinks = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/notes", label: "Notes", icon: FileText },
-  { href: "/cases", label: "Cases", icon: Scale },
+  { href: "/notes", label: "Summary Notes", icon: FileText },
+  { href: "/authorities", label: "Authorities", icon: Scale },
   { href: "/community", label: "Community", icon: Users },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];

@@ -18,7 +18,7 @@ import { useTheme } from "./ThemeProvider";
 const navLinks = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/assistant", label: "Assistant", icon: MessageSquare },
-  { href: "/notes", label: "Notes", icon: FileText },
+  { href: "/notes", label: "Summary Notes", icon: FileText },
   { href: "/authorities", label: "Authorities", icon: Scale },
   { href: "/videos", label: "Video Vault", icon: PlaySquare },
   { href: "/community", label: "Community", icon: Users },

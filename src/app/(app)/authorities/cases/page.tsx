@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, Scale, ExternalLink, PlaySquare } from "lucide-react";
+import { ArrowLeft, Search, Scale, ExternalLink, PlaySquare, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 
 interface CaseAuthority {
@@ -19,6 +20,10 @@ export default function CasesAuthorityPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [cases, setCases] = useState<CaseAuthority[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [selectedCase, setSelectedCase] = useState<CaseAuthority | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<CaseAuthority | null>(null);
 
   useEffect(() => {
     async function fetchCases() {
@@ -153,23 +158,21 @@ export default function CasesAuthorityPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {c.youtube_id && (
-                            <Link
-                              href={`/videos?yt=${c.youtube_id}&title=${encodeURIComponent(c.title)}`}
+                            <button
+                              onClick={() => setSelectedVideo(c)}
                               className="flex items-center gap-2 bg-[#3D1F5C] text-[#DCB8FF] text-xs font-bold uppercase px-4 py-2 rounded-lg border border-primary/20 hover:bg-primary/20 hover:text-white transition-all duration-300 shadow-sm"
                             >
                               <PlaySquare className="h-3.5 w-3.5" />
                               Watch Animation
-                            </Link>
+                            </button>
                           )}
-                          <a
-                            href={c.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => setSelectedCase(c)}
                             className="flex items-center gap-2 text-primary font-label font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors"
                           >
                             <ExternalLink className="h-4 w-4" />
                             View
-                          </a>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -201,6 +204,110 @@ export default function CasesAuthorityPage() {
           </div>
         )}
       </div>
+
+      {/* Case Document Viewer Modal */}
+      <AnimatePresence>
+        {selectedCase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCase(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-5xl h-[85vh] bg-surface-container border border-outline-variant/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-surface">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Scale className="h-5 w-5" />
+                  </div>
+                  <h2 className="font-serif text-xl md:text-2xl font-bold text-on-surface truncate pr-4">
+                    {selectedCase.title}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setSelectedCase(null)}
+                  className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 bg-white relative">
+                {/* Use Google Docs viewer for cross-format compatibility (PDF, DOCX, etc.) */}
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(selectedCase.file_url)}&embedded=true`}
+                  className="w-full h-full border-none"
+                  title={selectedCase.title}
+                />
+              </div>
+              <div className="p-4 bg-surface-container-high flex justify-between items-center text-xs font-label">
+                <span className="text-on-surface-variant">Source: Legal Mouse Authorities Hub</span>
+                <a 
+                  href={selectedCase.file_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-bold flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" /> Download Original
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Player Modal */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedVideo(null)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-4xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-primary/20"
+            >
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-primary transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              
+              <iframe 
+                width="100%" 
+                height="100%" 
+                src={`https://www.youtube.com/embed/${selectedVideo.youtube_id}?autoplay=1&rel=0`} 
+                frameBorder="0" 
+                allow="autoplay; encrypted-media" 
+                allowFullScreen
+                className="w-full h-full"
+              ></iframe>
+
+              <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                <h3 className="font-serif text-xl font-bold text-white mb-1">
+                  {selectedVideo.title}
+                </h3>
+                <p className="text-white/60 text-sm font-label uppercase tracking-widest">
+                  Visual Case Analysis
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
