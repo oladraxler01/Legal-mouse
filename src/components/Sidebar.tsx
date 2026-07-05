@@ -11,7 +11,8 @@ import {
   UserCircle,
   Sun,
   Moon,
-  PlaySquare
+  PlaySquare,
+  Gavel
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
@@ -23,6 +24,7 @@ const navLinks = [
   { href: "/videos", label: "Video Vault", icon: PlaySquare },
   { href: "/community", label: "Community", icon: Users },
   { href: "/templates", label: "Templates", icon: FileText },
+  { href: "/coach", label: "Coach", icon: Gavel },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 

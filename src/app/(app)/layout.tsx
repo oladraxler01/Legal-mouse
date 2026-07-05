@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
+import LegalMouseAvatar from "@/components/assistant/LegalMouseAvatar";
 
 export default function AppLayout({
   children,
@@ -13,6 +14,7 @@ export default function AppLayout({
         {children}
       </main>
       <BottomNav />
+      <LegalMouseAvatar />
     </div>
   );
 }

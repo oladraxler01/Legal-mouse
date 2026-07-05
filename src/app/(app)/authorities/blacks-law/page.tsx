@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Search, Book, ExternalLink } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
+import DocumentViewerModal from "@/components/modals/DocumentViewerModal";
 
 interface DictionaryEntry {
   id: string;
@@ -16,6 +18,9 @@ export default function DictionaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal viewer state
+  const [activeDocument, setActiveDocument] = useState<{ title: string; url: string } | null>(null);
 
   useEffect(() => {
     async function fetchEntries() {
@@ -103,15 +108,13 @@ export default function DictionaryPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
-                    <a
-                      href={entry.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-primary font-label font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors"
+                    <button
+                      onClick={() => setActiveDocument({ title: entry.title, url: entry.file_url })}
+                      className="flex items-center gap-2 text-primary font-label font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors cursor-pointer"
                     >
                       <ExternalLink className="h-4 w-4" />
                       Open File
-                    </a>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -140,6 +143,19 @@ export default function DictionaryPage() {
           </div>
         )}
       </div>
+
+      {/* Document Viewer Modal Overlay */}
+      <AnimatePresence>
+        {activeDocument && (
+          <DocumentViewerModal
+            isOpen={!!activeDocument}
+            onClose={() => setActiveDocument(null)}
+            title={activeDocument.title}
+            fileUrl={activeDocument.url}
+            resourceType="Book"
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
