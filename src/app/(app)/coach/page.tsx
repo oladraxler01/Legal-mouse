@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -60,11 +60,51 @@ const FALLBACK_CASE: CaseData = {
   exhibitB: "Ballistics Verified Forensic Report",
 };
 
+const DEFAULT_WARNINGS: WarningCard[] = [
+  {
+    id: "w1",
+    type: "error",
+    label: "HEARSAY OBJECTION",
+    description:
+      "Coach: You are testifying to what the witness told you, not what you perceived. Rephrase immediately.",
+    timestamp: "12s ago",
+  },
+  {
+    id: "w2",
+    type: "warning",
+    label: "LEADING QUESTION",
+    description:
+      "Coach: Suggesting the answer within the question during direct examination is prohibited.",
+    timestamp: "1m ago",
+  },
+];
+
 /* ═══════════════════════════════════════════════════
-   Component
+   Moot Court Simulator Page (Suspense Wrapped Wrapper)
    ═══════════════════════════════════════════════════ */
 
 export default function CoachPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-surface flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-on-surface-variant text-sm font-mono">Loading simulation workspace...</p>
+          </div>
+        </div>
+      }
+    >
+      <CoachPageContent />
+    </Suspense>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   Main Workspace Content Component
+   ═══════════════════════════════════════════════════ */
+
+function CoachPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -335,6 +375,18 @@ Extra Context: ${activeSimulationContext}
         return "text-primary";
     }
   })();
+
+  /* ── Loading skeleton ───────────────────────────── */
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-on-surface-variant text-sm font-mono">Loading case dossier...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-sans flex flex-col">
