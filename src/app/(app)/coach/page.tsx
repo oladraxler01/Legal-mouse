@@ -120,7 +120,18 @@ function CoachPageContent() {
   const [chargeSheetOpen, setChargeSheetOpen] = useState(true);
   const [witnessOpen, setWitnessOpen] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<WarningCard[]>([]);
+
+  const isListeningRef = useRef(isListening);
+  const recognitionRef = useRef<any>(null);
+  const committedIndexRef = useRef(0);
+
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
   const [legalAccuracy, setLegalAccuracy] = useState(90);
   const [demeanor, setDemeanor] = useState(85);
   const [maximCount, setMaximCount] = useState(0);
@@ -131,8 +142,7 @@ function CoachPageContent() {
   const [exhibitBFile, setExhibitBFile] = useState<UploadedFile | null>(null);
   const [activeSimulationContext, setActiveSimulationContext] = useState<string>("");
 
-  /* ── Refs for Speech Recognition ─────────────────── */
-  const recognitionRef = useRef<any>(null);
+
 
   /* ── Refs for Inputs ────────────────────────────── */
   const fileInputARef = useRef<HTMLInputElement>(null);
@@ -198,30 +208,67 @@ function CoachPageContent() {
       recognition.lang = "en-US";
 
       recognition.onresult = (event: any) => {
-        let finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        let interimPart = "";
+        
+        // Process any new final results
+        for (let i = committedIndexRef.current; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
+            const transcript = event.results[i][0].transcript;
+            if (transcript.trim()) {
+              setLiveTranscript((prev) => {
+                const trimmedPrev = prev.trim();
+                const trimmedText = transcript.trim();
+                if (!trimmedPrev) return trimmedText;
+                return `${trimmedPrev} ${trimmedText}`;
+              });
+            }
+            committedIndexRef.current = i + 1;
+          } else {
+            interimPart += event.results[i][0].transcript;
           }
         }
-        if (finalTranscript) {
-          setLiveTranscript((prev) => {
-            const next = prev + " " + finalTranscript;
-            return next.trim();
-          });
-        }
+
+        setInterimTranscript(interimPart);
       };
 
       recognition.onerror = (event: any) => {
-        console.error("Speech recognition error", event);
+        console.error("Speech recognition error:", event.error, event);
+        let errorMsg = "";
+        let shouldStop = false;
+
+        if (event.error === "not-allowed") {
+          errorMsg = "Microphone access denied. Please check browser microphone permissions.";
+          shouldStop = true;
+        } else if (event.error === "audio-capture") {
+          errorMsg = "No microphone detected. Please connect a microphone.";
+          shouldStop = true;
+        } else if (event.error === "network") {
+          errorMsg = "Speech recognition network error.";
+          shouldStop = true;
+        } else if (event.error !== "no-speech" && event.error !== "aborted") {
+          errorMsg = `Speech recognition error: ${event.error}`;
+          shouldStop = true;
+        }
+
+        if (errorMsg) {
+          setTranscriptionError(errorMsg);
+        }
+
+        if (shouldStop) {
+          isListeningRef.current = false;
+          setIsListening(false);
+        }
       };
 
       recognition.onend = () => {
-        if (isListening) {
+        committedIndexRef.current = 0;
+        setInterimTranscript("");
+
+        if (isListeningRef.current) {
           try {
             recognition.start();
           } catch (e) {
-            console.error(e);
+            console.error("Failed to auto-restart speech recognition:", e);
           }
         }
       };
@@ -234,25 +281,56 @@ function CoachPageContent() {
         recognitionRef.current.abort();
       }
     };
-  }, [isListening]);
+  }, []);
 
   /* ── Speech Recognition Toggle ──────────────────── */
   useEffect(() => {
     if (isListening) {
       setCoachState("LISTENING...");
+      setTranscriptionError(null);
       try {
         recognitionRef.current?.start();
       } catch (e) {
-        console.error(e);
+        console.error("Failed to start speech recognition:", e);
       }
     } else {
       setCoachState("LISTENING...");
-      recognitionRef.current?.stop();
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {
+        console.error("Failed to stop speech recognition:", e);
+      }
     }
   }, [isListening]);
 
   const toggleMic = useCallback(() => {
-    setIsListening((prev) => !prev);
+    setIsListening((prev) => {
+      const next = !prev;
+      isListeningRef.current = next;
+      if (!next) {
+        // Commit any remaining interim text
+        setInterimTranscript((prevInterim) => {
+          if (prevInterim.trim()) {
+            setLiveTranscript((prevLive) => {
+              const trimmedLive = prevLive.trim();
+              const trimmedInterim = prevInterim.trim();
+              return trimmedLive ? `${trimmedLive} ${trimmedInterim}` : trimmedInterim;
+            });
+          }
+          return "";
+        });
+        committedIndexRef.current = 0;
+      } else {
+        setTranscriptionError(null);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLiveTranscript(val);
+    setInterimTranscript("");
   }, []);
 
   /* ── Debounced AI Coach Evaluation ──────────────── */
@@ -688,9 +766,20 @@ Extra Context: ${activeSimulationContext}
               <div className="absolute -top-3 left-6 px-2 bg-surface-container text-amber-400 text-[10px] font-bold uppercase tracking-widest">
                 Live Transcription
               </div>
-              <p className="text-base md:text-lg text-on-surface italic leading-relaxed font-serif min-h-[60px]">
-                {liveTranscript || 'Click the microphone button and start speaking your address...'}
-              </p>
+              {transcriptionError ? (
+                <p className="text-base md:text-lg leading-relaxed font-serif min-h-[60px]">
+                  <span className="text-red-400 font-sans text-xs md:text-sm not-italic flex items-center gap-1.5">
+                    <span className="shrink-0">⚠️</span> {transcriptionError}
+                  </span>
+                </p>
+              ) : (
+                <textarea
+                  value={liveTranscript + (interimTranscript ? (liveTranscript ? " " : "") + interimTranscript : "")}
+                  onChange={handleTextareaChange}
+                  placeholder="Click the microphone button and start speaking your address, or click here to edit..."
+                  className="w-full bg-transparent border-0 outline-none resize-none focus:ring-0 text-base md:text-lg text-on-surface italic leading-relaxed font-serif min-h-[80px] p-0 overflow-y-auto max-h-[160px]"
+                />
+              )}
             </div>
           </div>
         </section>
