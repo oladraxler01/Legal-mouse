@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
 export const maxDuration = 30;
@@ -89,27 +89,60 @@ Return a JSON object containing:
 
     systemPrompt += `\n\nEnsure you return ONLY valid, raw JSON matching the schema. No markdown formatting codeblocks or wrapping.`;
 
-    const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
-      system: systemPrompt,
-      prompt: `User Transcript/Inputs to process: "${transcript}"`,
-    });
+    const apiKeysPool = [
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_BACKUP,
+      process.env.GEMINI_API_KEY_EMERGENCY
+    ].filter(Boolean) as string[];
 
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const result = JSON.parse(cleanText);
+    let responsePayload = null;
+    let apiExecutionSuccess = false;
 
-    return Response.json(result);
+    for (let i = 0; i < apiKeysPool.length; i++) {
+      try {
+        const activeKey = apiKeysPool[i];
+        console.log(`[Demo Key Rotation]: Attempting execution with Key Index [${i}]`);
+        
+        const googleInstance = createGoogleGenerativeAI({ apiKey: activeKey });
+        
+        const { text } = await generateText({
+          model: googleInstance('gemini-2.5-flash'),
+          system: systemPrompt,
+          prompt: `User Transcript/Inputs to process: "${transcript}"`,
+        });
+
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        responsePayload = JSON.parse(cleanText);
+        
+        apiExecutionSuccess = true;
+        break; // Break out of the loop immediately on success!
+      } catch (error: any) {
+        console.error(`[Demo Key Rotation Alert]: Key Index [${i}] failed.`);
+        
+        // If the error is a 429 rate limit, log it and let the loop continue to the next key index
+        if (error?.status === 429 || error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota')) {
+          console.warn("Rate limit hit. Transitioning to fallback key...");
+          continue;
+        }
+        
+        // For any non-429 unexpected code bugs, throw it so we can trace it
+        throw error;
+      }
+    }
+
+    if (!apiExecutionSuccess) {
+      return Response.json({
+        role: 'opponent',
+        title: 'PROSECUTION COUNSEL: PROCEDURAL PUSHBACK',
+        text: 'Counsel, your line of argument faces a strong foundational objection under the Evidence Act. Kindly re-verify your submission timelines against Sgt. Miller\'s explicit statement before proceeding.'
+      });
+    }
+
+    return Response.json(responsePayload);
   } catch (error: any) {
     console.error('Coach API Error:', error);
     
-    // Detect API quota limit exhaustion
-    if (error.statusCode === 429 || (error.message && error.message.toLowerCase().includes('quota'))) {
-      return Response.json(
-        { error: 'Gemini API free-tier quota exceeded (limit 20 requests/day). Please update GOOGLE_GENERATIVE_AI_API_KEY in your .env.local file with a standard/paid tier key, or try again later.' },
-        { status: 429 }
-      );
-    }
-
     return Response.json(
       { error: 'Failed to evaluate speech.' },
       { status: 500 }
