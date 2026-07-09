@@ -37,6 +37,7 @@ interface WarningCard {
   label: string;
   description: string;
   timestamp: string;
+  role?: string;
 }
 
 interface UploadedFile {
@@ -45,9 +46,59 @@ interface UploadedFile {
   content: string;
 }
 
+interface OpponentOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
 /* ═══════════════════════════════════════════════════
-   Default Fallback Data
+   Predefined Case Scenarios
    ═══════════════════════════════════════════════════ */
+
+const PREDEFINED_SCENARIOS = {
+  CRIMINAL: [
+    {
+      id: "crim_1",
+      title: "State v. Olasunkanmi (2026)",
+      stage: "CRIMINAL TRIAL STAGE",
+      chargeSheet: "Allegations under Section 311 of the Criminal Code Act. Count 1: Culpable homicide. Count 2: Armed robbery on the High Street.",
+      witnessStatement: 'Deposition of Sgt. Miller: "I arrived at exactly 22:15 hours. The suspect was already restrained by the night watchman. I observed blood on the suspect\'s outer garment. When questioned, the suspect immediately stated, \'I didn\'t touch him.\'"'
+    },
+    {
+      id: "crim_2",
+      title: "State v. Jenkins (2026)",
+      stage: "BAIL HEARING",
+      chargeSheet: "Count 1: Grand Larceny. Count 2: Evading Arrest. The defendant allegedly stole $45,000 in bearer bonds.",
+      witnessStatement: 'Affidavit of Flight Risk: "The defendant was found at the international terminal with a one-way ticket to a non-extradition jurisdiction. We request bail be denied."'
+    }
+  ],
+  CIVIL: [
+    {
+      id: "civ_1",
+      title: "TechCorp v. Smith (2026)",
+      stage: "CIVIL INJUNCTION HEARING",
+      chargeSheet: "Breach of Non-Compete Agreement and Misappropriation of Trade Secrets. Plaintiff seeks immediate injunctive relief.",
+      witnessStatement: 'Affidavit of HR Director: "Mr. Smith downloaded 40GB of proprietary source code the night before tendering his resignation to join our direct competitor. We request an immediate halt to his employment."'
+    },
+    {
+      id: "civ_2",
+      title: "Estate of Davis v. Horizon Medical",
+      stage: "MEDICAL MALPRACTICE TRIAL",
+      chargeSheet: "Wrongful death arising from gross negligence during routine appendectomy on August 14th.",
+      witnessStatement: 'Expert Testimony - Dr. Aris: "The surgical team completely ignored the patient\'s clearly documented allergy to the administered anesthetic, leading to anaphylactic shock."'
+    }
+  ],
+  HYBRID: [
+    {
+      id: "hyb_1",
+      title: "City of New Port v. Industrial Chem",
+      stage: "REGULATORY & TORT ACTION",
+      chargeSheet: "Civil suit for environmental damages and statutory criminal negligence for unauthorized dumping of toxic waste in municipal waterways.",
+      witnessStatement: 'EPA Inspector Log: "At 04:00 hours, we observed the facility actively bypassing the filtration unit and discharging raw toxic effluent directly into the river..."'
+    }
+  ]
+};
 
 const FALLBACK_CASE: CaseData = {
   title: "State v. Olasunkanmi (2026)",
@@ -56,8 +107,8 @@ const FALLBACK_CASE: CaseData = {
     "Allegations under Section 311 of the Criminal Code Act. Count 1: Culpable homicide. Count 2: Armed robbery on the High Street.",
   witnessStatement:
     'Deposition of Sgt. Miller: "I arrived at exactly 22:15 hours. The suspect was already restrained by the night watchman..."',
-  exhibitA: "CCTV footage from High St Intersection (0.42 GB)",
-  exhibitB: "Ballistics Verified Forensic Report",
+  exhibitA: "Ccroll",
+  exhibitB: "",
 };
 
 const DEFAULT_WARNINGS: WarningCard[] = [
@@ -111,8 +162,8 @@ function CoachPageContent() {
   /* ── State ──────────────────────────────────────── */
   const [caseTitle, setCaseTitle] = useState<string>(FALLBACK_CASE.title);
   const [caseStage, setCaseStage] = useState<string>(FALLBACK_CASE.stage);
-  const [chargeSheetText, setChargeSheetText] = useState<string>("");
-  const [witnessStatementText, setWitnessStatementText] = useState<string>("");
+  const [activeChargeText, setActiveChargeText] = useState<string>("");
+  const [activeWitnessText, setActiveWitnessText] = useState<string>("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isListening, setIsListening] = useState(false);
@@ -123,10 +174,24 @@ function CoachPageContent() {
   const [interimTranscript, setInterimTranscript] = useState("");
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<WarningCard[]>([]);
+  const [scale, setScale] = useState(1);
+  const [courtTurn, setCourtTurn] = useState<'USER_ARGUMENT' | 'OPPOSING_RESPONSE' | 'JUDICIAL_INTERLOCUTORY'>('USER_ARGUMENT');
+  const [isOpponentSpeaking, setIsOpponentSpeaking] = useState(false);
+  const [opponentRole] = useState<string>("Defense Counsel");
+  const [typedArgument, setTypedArgument] = useState("");
+  const [argumentHistoryLog, setArgumentHistoryLog] = useState<{ role: 'advocate' | 'opponent'; text: string }[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [opponentOptions, setOpponentOptions] = useState<OpponentOption[]>([]);
+
+  const [isCaseInitialized, setIsCaseInitialized] = useState(false);
+  const [caseNature, setCaseNature] = useState<'CRIMINAL' | 'CIVIL' | 'HYBRID' | null>(null);
+  const [intakeMethod, setIntakeMethod] = useState<'AI_SCENARIO' | 'CUSTOM_UPLOAD' | null>(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
 
   const isListeningRef = useRef(isListening);
   const recognitionRef = useRef<any>(null);
   const committedIndexRef = useRef(0);
+  const lastSubmittedTextRef = useRef("");
 
   useEffect(() => {
     isListeningRef.current = isListening;
@@ -155,8 +220,8 @@ function CoachPageContent() {
     if (!caseId) {
       setCaseTitle(FALLBACK_CASE.title);
       setCaseStage(FALLBACK_CASE.stage);
-      setChargeSheetText(FALLBACK_CASE.chargeSheet);
-      setWitnessStatementText(FALLBACK_CASE.witnessStatement);
+      setActiveChargeText(FALLBACK_CASE.chargeSheet);
+      setActiveWitnessText(FALLBACK_CASE.witnessStatement);
       setIsLoading(false);
       return;
     }
@@ -175,19 +240,19 @@ function CoachPageContent() {
           console.error("Failed to fetch case:", error);
           setCaseTitle(FALLBACK_CASE.title);
           setCaseStage(FALLBACK_CASE.stage);
-          setChargeSheetText(FALLBACK_CASE.chargeSheet);
-          setWitnessStatementText(FALLBACK_CASE.witnessStatement);
+          setActiveChargeText(FALLBACK_CASE.chargeSheet);
+          setActiveWitnessText(FALLBACK_CASE.witnessStatement);
         } else {
           setCaseTitle(data.title || FALLBACK_CASE.title);
           setCaseStage(data.stage || FALLBACK_CASE.stage);
-          setChargeSheetText(data.charge_sheet || FALLBACK_CASE.chargeSheet);
-          setWitnessStatementText(data.witness_statement || FALLBACK_CASE.witnessStatement);
+          setActiveChargeText(data.charge_sheet || FALLBACK_CASE.chargeSheet);
+          setActiveWitnessText(data.witness_statement || FALLBACK_CASE.witnessStatement);
         }
       } catch {
         setCaseTitle(FALLBACK_CASE.title);
         setCaseStage(FALLBACK_CASE.stage);
-        setChargeSheetText(FALLBACK_CASE.chargeSheet);
-        setWitnessStatementText(FALLBACK_CASE.witnessStatement);
+        setActiveChargeText(FALLBACK_CASE.chargeSheet);
+        setActiveWitnessText(FALLBACK_CASE.witnessStatement);
       } finally {
         setIsLoading(false);
       }
@@ -303,20 +368,252 @@ function CoachPageContent() {
     }
   }, [isListening]);
 
+  const speakText = (text: string, onEnd: () => void) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      onEnd();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => {
+      onEnd();
+    };
+    utterance.onerror = (e) => {
+      console.error("SpeechSynthesis error:", e);
+      onEnd();
+    };
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.includes("en-US") || v.lang.includes("en-GB"));
+    if (voice) {
+      utterance.voice = voice;
+    }
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const unlockInterface = useCallback(() => {
+    setCoachState("LISTENING...");
+    setLiveTranscript("");
+    setInterimTranscript("");
+    setTypedArgument("");
+    setCourtTurn("USER_ARGUMENT");
+    setIsSubmitting(false);
+  }, []);
+
+  const runOpponentTurn = async (currentTranscript: string) => {
+    setCourtTurn("OPPOSING_RESPONSE");
+    setIsOpponentSpeaking(true);
+    setCoachState("OPPONENT SPEAKING...");
+
+    const bundleContext = `
+Active Charge Sheet: ${activeChargeText}
+Active Witness Statements: ${activeWitnessText}
+Exhibit A uploaded text: ${exhibitAFile?.content || "None"}
+Exhibit B uploaded text: ${exhibitBFile?.content || "None"}
+Extra Context: ${activeSimulationContext}
+    `.trim();
+
+    try {
+      const response = await fetch("/api/coach/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: currentTranscript,
+          documents: bundleContext,
+          courtTurn: "OPPOSING_RESPONSE",
+          caseNature
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.warnings && data.warnings.length > 0) {
+          // Keep stream limited to only active context items (1 card row per turn)
+          setWarnings([data.warnings[0]]);
+        }
+        if (typeof data.legalAccuracy === "number") setLegalAccuracy(data.legalAccuracy);
+        if (typeof data.demeanorScore === "number") setDemeanor(data.demeanorScore);
+        
+        if (data.responseOptions && data.responseOptions.length > 0) {
+          setOpponentOptions(data.responseOptions);
+          setIsOpponentSpeaking(false);
+          setCoachState("WAITING FOR DEPLOYMENT...");
+        } else if (data.responseSpeech) {
+          setArgumentHistoryLog(prev => [...prev, { role: 'opponent', text: data.responseSpeech }]);
+          setWarnings([
+            {
+              id: `opp_${Date.now()}`,
+              type: "warning",
+              label: "Opposing Counsel Pushback",
+              description: data.responseSpeech,
+              timestamp: "Just now",
+              role: data.role || "Defense Counsel"
+            }
+          ]);
+
+          speakText(data.responseSpeech, () => {
+            setIsOpponentSpeaking(false);
+            runJudicialTurn(currentTranscript, data.responseSpeech);
+          });
+        } else {
+          setIsOpponentSpeaking(false);
+          runJudicialTurn(currentTranscript, "");
+        }
+      } else {
+        throw new Error(`API Error: ${response.status}`);
+      }
+    } catch (e) {
+      console.error("Opponent Turn Error:", e);
+      
+      const fallbackText = "Counsel, your line of questioning directly compromises the witness timeline outlined by Sgt. Miller. Kindly reframe your approach or present a foundational argument for the Court to consider.";
+      
+      setArgumentHistoryLog(prev => [...prev, { role: 'opponent', text: fallbackText }]);
+      setWarnings([
+        {
+          id: `fallback_${Date.now()}`,
+          type: "warning",
+          label: "PROSECUTION COUNSEL: REBUTTAL PUSHBACK",
+          description: fallbackText,
+          timestamp: "Just now",
+          role: "Defense Counsel"
+        }
+      ]);
+      
+      setIsOpponentSpeaking(false);
+      unlockInterface(); // Instantly release the UI lock
+    }
+  };
+
+  const runJudicialTurn = async (userText: string, opponentText: string) => {
+    setCourtTurn("JUDICIAL_INTERLOCUTORY");
+    setCoachState("DELIVERING RULING...");
+
+    const bundleContext = `
+Active Charge Sheet: ${activeChargeText}
+Active Witness Statements: ${activeWitnessText}
+Exhibit A uploaded text: ${exhibitAFile?.content || "None"}
+Exhibit B uploaded text: ${exhibitBFile?.content || "None"}
+Extra Context: ${activeSimulationContext}
+    `.trim();
+
+    try {
+      const response = await fetch("/api/coach/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: `User counsel argued: "${userText}". Opposing counsel countered: "${opponentText}".`,
+          documents: bundleContext,
+          courtTurn: "JUDICIAL_INTERLOCUTORY",
+          caseNature
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.warnings) {
+          setWarnings((prev) => [...data.warnings, ...prev]);
+        }
+        if (typeof data.legalAccuracy === "number") setLegalAccuracy(data.legalAccuracy);
+        if (typeof data.demeanorScore === "number") setDemeanor(data.demeanorScore);
+
+        if (data.responseSpeech) {
+          setWarnings([
+            {
+              id: `judge_${Date.now()}`,
+              type: "error",
+              label: "Procedural Ruling",
+              description: data.responseSpeech,
+              timestamp: "Just now",
+              role: data.role || "Justice LegalMouse"
+            }
+          ]);
+
+          const animInterval = setInterval(() => {
+            setScale(1 + Math.random() * 0.15);
+          }, 100);
+
+          speakText(data.responseSpeech, () => {
+            clearInterval(animInterval);
+            setScale(1);
+            unlockInterface();
+          });
+        } else {
+          unlockInterface();
+        }
+      } else {
+        unlockInterface();
+      }
+    } catch (e) {
+      console.error(e);
+      unlockInterface();
+    }
+  };
+
+  const deployObjection = (option: OpponentOption) => {
+    setOpponentOptions([]); // Clear the menu
+    setArgumentHistoryLog(prev => [...prev, { role: 'opponent', text: option.description }]);
+    setWarnings([
+      {
+        id: `opp_${Date.now()}`,
+        type: "warning",
+        label: option.label,
+        description: option.description,
+        timestamp: "Just now",
+        role: opponentRole
+      }
+    ]);
+    
+    setIsOpponentSpeaking(true);
+    setCoachState("OPPONENT SPEAKING...");
+
+    speakText(option.description, () => {
+      setIsOpponentSpeaking(false);
+      runJudicialTurn(lastSubmittedTextRef.current, option.description);
+    });
+  };
+
+  const submitArgument = async (textToSubmit: string) => {
+    if (!textToSubmit.trim() || isSubmitting || courtTurn !== 'USER_ARGUMENT') return;
+    
+    setIsSubmitting(true);
+    setArgumentHistoryLog(prev => [...prev, { role: 'advocate', text: textToSubmit }]);
+    lastSubmittedTextRef.current = textToSubmit;
+    
+    // Clear the typed text explicitly to reflect submission
+    setTypedArgument("");
+    setLiveTranscript("");
+    setInterimTranscript("");
+    
+    if (isListeningRef.current) {
+        setIsListening(false);
+        isListeningRef.current = false;
+        try { recognitionRef.current?.stop(); } catch(e) {}
+    }
+
+    await runOpponentTurn(textToSubmit);
+  };
+
   const toggleMic = useCallback(() => {
+    if (isSubmitting) return;
     setIsListening((prev) => {
       const next = !prev;
       isListeningRef.current = next;
       if (!next) {
-        // Commit any remaining interim text
         setInterimTranscript((prevInterim) => {
-          if (prevInterim.trim()) {
-            setLiveTranscript((prevLive) => {
-              const trimmedLive = prevLive.trim();
-              const trimmedInterim = prevInterim.trim();
-              return trimmedLive ? `${trimmedLive} ${trimmedInterim}` : trimmedInterim;
-            });
-          }
+          let finalVal = "";
+          setLiveTranscript((prevLive) => {
+            const trimmedLive = prevLive.trim();
+            const trimmedInterim = prevInterim.trim();
+            finalVal = trimmedLive ? `${trimmedLive} ${trimmedInterim}` : trimmedInterim;
+            
+            // Only stop recording, don't auto-submit. The user will use "Submit Argument".
+            // We transfer the transcript to the typedArgument field for them to review/edit
+            if (finalVal.trim()) {
+              setTypedArgument(prevTyped => (prevTyped ? `${prevTyped} ${finalVal}` : finalVal));
+            }
+            return "";
+          });
           return "";
         });
         committedIndexRef.current = 0;
@@ -325,25 +622,25 @@ function CoachPageContent() {
       }
       return next;
     });
-  }, []);
+  }, [isSubmitting]);
 
   const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Left for backwards compatibility, but we use setTypedArgument now
     const val = e.target.value;
-    setLiveTranscript(val);
-    setInterimTranscript("");
+    setTypedArgument(val);
   }, []);
 
   /* ── Debounced AI Coach Evaluation ──────────────── */
   useEffect(() => {
-    if (!liveTranscript.trim()) return;
+    if (courtTurn !== "USER_ARGUMENT") return;
+    const textToEvaluate = liveTranscript || typedArgument;
+    if (!textToEvaluate.trim() || isSubmitting) return;
 
     const delayDebounce = setTimeout(async () => {
-      setCoachState("EVALUATING...");
-
-      // Bundle Charge Sheet, Witness Statements, and Active Uploaded File Texts
+      // Evaluate passively without locking the interface or causing a full turn response
       const bundleContext = `
-Active Charge Sheet: ${chargeSheetText}
-Active Witness Statements: ${witnessStatementText}
+Active Charge Sheet: ${activeChargeText}
+Active Witness Statements: ${activeWitnessText}
 Exhibit A uploaded text: ${exhibitAFile?.content || "None"}
 Exhibit B uploaded text: ${exhibitBFile?.content || "None"}
 Extra Context: ${activeSimulationContext}
@@ -354,15 +651,17 @@ Extra Context: ${activeSimulationContext}
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            transcript: liveTranscript,
+            transcript: textToEvaluate,
             documents: bundleContext,
+            courtTurn: "USER_ARGUMENT",
+            caseNature
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (data.warnings) {
-            setWarnings(data.warnings);
+          if (data.warnings && data.warnings.length > 0) {
+            setWarnings([data.warnings[0]]);
           }
           if (typeof data.legalAccuracy === "number") {
             setLegalAccuracy(data.legalAccuracy);
@@ -370,8 +669,7 @@ Extra Context: ${activeSimulationContext}
           if (typeof data.demeanorScore === "number") {
             setDemeanor(data.demeanorScore);
           }
-          // Scan for Latin phrases to count maxims
-          const lower = liveTranscript.toLowerCase();
+          const lower = textToEvaluate.toLowerCase();
           let count = 0;
           if (lower.includes("res ipsa")) count++;
           if (lower.includes("necessity") || lower.includes("necessitas")) count++;
@@ -380,14 +678,11 @@ Extra Context: ${activeSimulationContext}
         }
       } catch (e) {
         console.error(e);
-      } finally {
-        setCoachState("RULING...");
-        setTimeout(() => setCoachState("LISTENING..."), 1500);
       }
-    }, 2500);
+    }, 3000);
 
     return () => clearTimeout(delayDebounce);
-  }, [liveTranscript, chargeSheetText, witnessStatementText, exhibitAFile, exhibitBFile, activeSimulationContext]);
+  }, [liveTranscript, typedArgument, courtTurn, isSubmitting, activeChargeText, activeWitnessText, exhibitAFile, exhibitBFile, activeSimulationContext]);
 
   /* ── File Handling & Meta Resolution ──────────────── */
   const handleFileChange = (
@@ -427,18 +722,22 @@ Extra Context: ${activeSimulationContext}
   /* ── Submit Session ─────────────────────────────── */
   const handleSubmit = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.abort();
+      try { recognitionRef.current.abort(); } catch(e) {}
     }
     setIsListening(false);
 
-    const payload = {
-      transcript: liveTranscript || "No voice argument recorded.",
+    const finalPayload = {
+      transcriptHistory: argumentHistoryLog,
+      chargeSheetContext: activeChargeText,
+      witnessStatementContext: activeWitnessText,
       warningsCount: warnings.length,
       accuracy: legalAccuracy,
       demeanor: demeanor,
+      caseNature,
+      intakeMethod
     };
 
-    localStorage.setItem("legalmouse_coach_session", JSON.stringify(payload));
+    localStorage.setItem("legalmouse_coach_session", JSON.stringify(finalPayload));
     router.push("/coach/judgment");
   };
 
@@ -461,6 +760,152 @@ Extra Context: ${activeSimulationContext}
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <p className="text-on-surface-variant text-sm font-mono">Loading case dossier...</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Onboarding Wrapper ─────────────────────────── */
+  if (!isCaseInitialized) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center py-20 px-4 md:px-8 font-sans">
+        <div className="max-w-4xl w-full">
+          <h1 className="text-4xl md:text-5xl font-black text-on-surface mb-2 tracking-tighter uppercase">Initialize Courtroom</h1>
+          <p className="text-on-surface-variant mb-12">Configure the simulation parameters to calibrate the active trial arena.</p>
+
+          <div className="space-y-12">
+            {/* Step A: Nature of the Case */}
+            <section>
+              <h2 className="text-xs font-bold text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span className="flex items-center justify-center w-5 h-5 rounded bg-primary/20 text-primary">A</span>
+                Nature of the Case
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['CRIMINAL', 'CIVIL', 'HYBRID'] as const).map(nature => (
+                  <button
+                    key={nature}
+                    onClick={() => {
+                      setCaseNature(nature);
+                      setIntakeMethod(null);
+                      setSelectedScenarioId(null);
+                    }}
+                    className={`p-6 rounded-xl border text-left transition-all ${caseNature === nature ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-outline-variant/20 bg-surface-container-low hover:border-outline-variant'}`}
+                  >
+                    <h3 className="text-xl font-black text-on-surface mb-2 uppercase">{nature}</h3>
+                    <p className="text-xs text-on-surface-variant">
+                      {nature === 'CRIMINAL' && 'State v. Suspect - Statutory infractions, homicide, robbery.'}
+                      {nature === 'CIVIL' && 'Private disputes - Breach of contract, torts, injunctions.'}
+                      {nature === 'HYBRID' && 'Parallel actions - Tortious claims mixed with statutory negligence.'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Step B: Intake Method */}
+            <AnimatePresence>
+              {caseNature && (
+                <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                  <h2 className="text-xs font-bold text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded bg-primary/20 text-primary">B</span>
+                    Scenario Intake Method
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {(['AI_SCENARIO', 'CUSTOM_UPLOAD'] as const).map(method => (
+                      <button
+                        key={method}
+                        onClick={() => {
+                          setIntakeMethod(method);
+                          setSelectedScenarioId(null);
+                        }}
+                        className={`p-6 rounded-xl border text-left transition-all ${intakeMethod === method ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-outline-variant/20 bg-surface-container-low hover:border-outline-variant'}`}
+                      >
+                        <h3 className="text-lg font-black text-on-surface mb-2 uppercase">
+                          {method === 'AI_SCENARIO' ? 'AI Generation Suite' : 'Custom Briefcase Upload'}
+                        </h3>
+                        <p className="text-xs text-on-surface-variant">
+                          {method === 'AI_SCENARIO' ? 'Load a pre-configured scenario tailored to the selected case nature.' : 'Upload your own raw documents to populate the active panels.'}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {intakeMethod === 'AI_SCENARIO' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-surface-container rounded-xl border border-outline-variant/10">
+                      {PREDEFINED_SCENARIOS[caseNature].map(scenario => (
+                        <button
+                          key={scenario.id}
+                          onClick={() => setSelectedScenarioId(scenario.id)}
+                          className={`p-4 rounded-lg border text-left transition-all ${selectedScenarioId === scenario.id ? 'border-primary bg-primary/10' : 'border-outline-variant/20 bg-surface-container-low hover:border-outline-variant/50'}`}
+                        >
+                          <span className="text-[10px] uppercase font-bold text-primary tracking-widest mb-1 block">{scenario.stage}</span>
+                          <h4 className="font-bold text-on-surface mb-2">{scenario.title}</h4>
+                          <p className="text-xs text-on-surface-variant line-clamp-2">{scenario.chargeSheet}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {intakeMethod === 'CUSTOM_UPLOAD' && (
+                    <div className="p-8 bg-surface-container rounded-xl border border-outline-variant/10 border-dashed text-center">
+                      <div className="flex flex-col items-center justify-center gap-4">
+                        <FileText className="w-12 h-12 text-on-surface-variant opacity-50" />
+                        <p className="text-sm font-bold text-on-surface">Upload Custom Briefcase Files</p>
+                        <p className="text-xs text-on-surface-variant mb-4">Your documents will be parsed directly into the active dashboard.</p>
+                        <input 
+                          type="file" 
+                          id="onboarding-upload" 
+                          className="hidden" 
+                          onChange={(e) => handleFileChange(e, "A")} 
+                        />
+                        <label 
+                          htmlFor="onboarding-upload" 
+                          className="px-6 py-2 bg-surface-container-high border border-outline-variant/20 rounded cursor-pointer hover:bg-surface-container-highest transition-colors text-xs font-bold uppercase tracking-widest text-on-surface"
+                        >
+                          Select File
+                        </label>
+                        {exhibitAFile && (
+                          <p className="text-[10px] text-green-500 font-bold uppercase mt-2">Ready: {exhibitAFile.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </motion.section>
+              )}
+            </AnimatePresence>
+
+            {/* Step C: Initialize */}
+            <AnimatePresence>
+              {(selectedScenarioId || intakeMethod === 'CUSTOM_UPLOAD') && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-8 border-t border-outline-variant/10 flex justify-end">
+                  <button
+                    onClick={() => {
+                      if (intakeMethod === 'AI_SCENARIO' && selectedScenarioId && caseNature) {
+                        const scenario = PREDEFINED_SCENARIOS[caseNature].find(s => s.id === selectedScenarioId);
+                        if (scenario) {
+                          setCaseTitle(scenario.title);
+                          setCaseStage(scenario.stage);
+                          setActiveChargeText(scenario.chargeSheet);
+                          setActiveWitnessText(scenario.witnessStatement);
+                        }
+                      } else if (intakeMethod === 'CUSTOM_UPLOAD') {
+                         setCaseTitle("Custom Imported Case");
+                         setCaseStage("PRE-TRIAL CONFERENCE");
+                         if (exhibitAFile) {
+                           setActiveChargeText(exhibitAFile.content.slice(0, 500) + "...");
+                           setActiveWitnessText("Pending formal deposition entry...");
+                         }
+                      }
+                      setIsCaseInitialized(true);
+                    }}
+                    className="px-8 py-4 bg-primary text-on-primary font-black uppercase tracking-widest rounded-lg shadow-lg hover:bg-primary/90 transition-all flex items-center gap-3"
+                  >
+                    Initialize Courtroom <ArrowRight className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     );
@@ -555,8 +1000,8 @@ Extra Context: ${activeSimulationContext}
                     >
                       <div className="p-2 ml-0.5 border-l-2 border-outline-variant/20">
                         <textarea
-                          value={chargeSheetText}
-                          onChange={(e) => setChargeSheetText(e.target.value)}
+                          value={activeChargeText}
+                          onChange={(e) => setActiveChargeText(e.target.value)}
                           className="w-full bg-transparent border-0 outline-none resize-none focus:ring-0 text-sm text-on-surface-variant font-sans leading-relaxed min-h-[100px]"
                           placeholder="Type or paste your charge sheet details..."
                         />
@@ -597,8 +1042,8 @@ Extra Context: ${activeSimulationContext}
                     >
                       <div className="p-2 ml-0.5 border-l-2 border-outline-variant/20">
                         <textarea
-                          value={witnessStatementText}
-                          onChange={(e) => setWitnessStatementText(e.target.value)}
+                          value={activeWitnessText}
+                          onChange={(e) => setActiveWitnessText(e.target.value)}
                           className="w-full bg-transparent border-0 outline-none resize-none focus:ring-0 text-sm text-on-surface-variant font-sans leading-relaxed min-h-[100px]"
                           placeholder="Type or paste your witness statement details..."
                         />
@@ -682,18 +1127,22 @@ Extra Context: ${activeSimulationContext}
             {/* AI Presiding Judge Module */}
             <div className="mb-10 text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-dim shadow-2xl shadow-primary/10 relative z-10 flex items-center justify-center">
+                <motion.div
+                  animate={{ scale }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-dim shadow-2xl shadow-primary/10 relative z-10 flex items-center justify-center"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/mouse-avatar.png"
                     alt="Justice LegalMouse"
                     className="w-full h-full object-cover"
                   />
-                </div>
+                </motion.div>
                 {/* Status Indicator Badge */}
                 <div
                   className={`absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center border-2 border-surface z-20 ${
-                    coachState === "RULING..."
+                    coachState === "DELIVERING RULING..." || coachState === "RULING..."
                       ? "bg-red-500"
                       : coachState === "EVALUATING..."
                       ? "bg-amber-400"
@@ -701,7 +1150,7 @@ Extra Context: ${activeSimulationContext}
                   }`}
                 >
                   <span className="text-white text-[10px] font-bold">
-                    {coachState === "RULING..." ? "⚖" : coachState === "EVALUATING..." ? "👁" : "👂"}
+                    {coachState === "DELIVERING RULING..." || coachState === "RULING..." ? "⚖" : coachState === "EVALUATING..." ? "👁" : "👂"}
                   </span>
                 </div>
               </div>
@@ -760,26 +1209,60 @@ Extra Context: ${activeSimulationContext}
             </div>
           </div>
 
-          {/* Live Transcription Display Tray */}
+          {/* Live Transcription Display Tray & Manual Input Box */}
           <div className="px-4 md:px-8 pb-6 w-full max-w-2xl mx-auto">
-            <div className="glass-panel p-5 md:p-6 rounded-xl border border-amber-500/20 relative">
+            <div className={`glass-panel p-5 md:p-6 rounded-xl border relative transition-colors ${isSubmitting ? 'border-outline-variant/20 opacity-60 pointer-events-none' : 'border-amber-500/20'}`}>
               <div className="absolute -top-3 left-6 px-2 bg-surface-container text-amber-400 text-[10px] font-bold uppercase tracking-widest">
-                Live Transcription
+                Argument Input & History
               </div>
-              {transcriptionError ? (
-                <p className="text-base md:text-lg leading-relaxed font-serif min-h-[60px]">
+              
+              {/* History Log Tracking */}
+              {argumentHistoryLog.length > 0 && (
+                <div className="mb-4 max-h-[120px] overflow-y-auto space-y-3 border-b border-outline-variant/10 pb-4">
+                  {argumentHistoryLog.map((log, idx) => (
+                    <div key={idx} className={`text-sm ${log.role === 'advocate' ? 'text-primary text-right pl-12' : 'text-amber-500 text-left pr-12'}`}>
+                      <span className="font-bold uppercase tracking-wider text-[10px] block opacity-70 mb-0.5">{log.role === 'advocate' ? 'You' : 'Opponent'}</span> 
+                      <span className="font-serif italic leading-relaxed">{log.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {transcriptionError && (
+                <p className="text-base md:text-lg leading-relaxed font-serif mb-3">
                   <span className="text-red-400 font-sans text-xs md:text-sm not-italic flex items-center gap-1.5">
                     <span className="shrink-0">⚠️</span> {transcriptionError}
                   </span>
                 </p>
-              ) : (
-                <textarea
-                  value={liveTranscript + (interimTranscript ? (liveTranscript ? " " : "") + interimTranscript : "")}
-                  onChange={handleTextareaChange}
-                  placeholder="Click the microphone button and start speaking your address, or click here to edit..."
-                  className="w-full bg-transparent border-0 outline-none resize-none focus:ring-0 text-base md:text-lg text-on-surface italic leading-relaxed font-serif min-h-[80px] p-0 overflow-y-auto max-h-[160px]"
-                />
               )}
+
+              {isListening && (
+                <div className="mb-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-[10px] text-primary mb-1 uppercase tracking-wider font-bold animate-pulse">Listening...</p>
+                  <p className="w-full text-base md:text-lg text-on-surface italic leading-relaxed font-serif min-h-[40px]">
+                    {liveTranscript + (interimTranscript ? (liveTranscript ? " " : "") + interimTranscript : "") || "Speak your address now..."}
+                  </p>
+                </div>
+              )}
+
+              {/* Manual Text Input Component */}
+              <div className="flex flex-col md:flex-row items-end gap-3 mt-2">
+                <textarea
+                  value={typedArgument}
+                  onChange={(e) => setTypedArgument(e.target.value)}
+                  disabled={isSubmitting || isListening}
+                  placeholder={isListening ? "Pause microphone to type..." : "Type your argument manually here or use voice..."}
+                  className="w-full md:flex-1 bg-surface-container-low border border-outline-variant/20 rounded-lg p-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm md:text-base text-on-surface font-sans resize-none min-h-[80px]"
+                />
+                <button
+                  onClick={() => submitArgument(typedArgument)}
+                  disabled={!typedArgument.trim() || isSubmitting || isListening}
+                  className="w-full md:w-auto h-[50px] md:h-[80px] px-6 rounded-lg bg-primary text-on-primary font-bold shadow-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex md:flex-col items-center justify-center gap-2 md:gap-1"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                  <span className="text-xs md:text-[10px] uppercase tracking-wider">Submit Argument</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -788,13 +1271,14 @@ Extra Context: ${activeSimulationContext}
             PANEL 3: AI COACH ANALYSIS (RIGHT)
             ───────────────────────────────────────────── */}
         <aside className="lg:col-span-3 border-l border-outline-variant/10 bg-surface-container-low flex flex-col overflow-y-auto">
-          <div className="p-6">
+          {/* Top 40%: The Coach Region */}
+          <div className="p-6 border-b border-outline-variant/10 h-[40%] flex flex-col animate-in fade-in duration-300">
             <span className="text-[10px] tracking-widest uppercase font-bold text-primary mb-4 block">
               AI Coach Analysis
             </span>
 
             {/* Core Score Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-surface-container/50 p-4 rounded-lg border border-outline-variant/10">
                 <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-tight mb-1">
                   Legal Accuracy
@@ -820,7 +1304,7 @@ Extra Context: ${activeSimulationContext}
             </div>
 
             {/* Maxim Metric Module */}
-            <div className="mb-8 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between">
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between mt-auto">
               <div>
                 <p className="text-[10px] text-primary font-bold uppercase">
                   Latin Maxims Used
@@ -833,53 +1317,82 @@ Extra Context: ${activeSimulationContext}
                 {String(maximCount).padStart(2, "0")}
               </div>
             </div>
+          </div>
 
-            {/* Live Warning Stream */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] tracking-widest uppercase font-bold text-on-surface-variant">
-                  Live Warning Stream
-                </span>
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              </div>
-              <div className="space-y-3">
-                {warnings.length === 0 ? (
-                  <p className="text-xs text-on-surface-variant italic">No objections logged yet. Make your argument.</p>
-                ) : (
-                  warnings.map((warning) => (
-                    <div
-                      key={warning.id}
-                      className={`bg-surface-container/80 p-4 rounded-lg border-l-4 shadow-lg ${
-                        warning.type === "error"
-                          ? "border-red-500"
-                          : "border-amber-500"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span
-                          className={`text-xs font-black uppercase tracking-tighter ${
-                            warning.type === "error"
-                              ? "text-red-500"
-                              : "text-amber-500"
-                          }`}
-                        >
-                          {warning.label}
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant">
-                          {warning.timestamp}
-                        </span>
-                      </div>
-                      <p className="text-xs text-on-surface-variant leading-tight">
-                        {warning.description}
-                      </p>
+          {/* Bottom 60%: The Opponent Region */}
+          <div className="p-6 flex-1 flex flex-col overflow-y-auto animate-in fade-in duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] tracking-widest uppercase font-bold text-on-surface-variant">
+                OPPOSING COUNSEL DESK
+              </span>
+              <div 
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  isOpponentSpeaking ? "bg-red-500 animate-pulse shadow-[0_0_8px_#EF4444]" : "bg-neutral-600"
+                }`} 
+              />
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+              {opponentOptions.length > 0 ? (
+                opponentOptions.map((option, idx) => (
+                  <div
+                    key={option.id || `opt_${idx}`}
+                    className="p-4 rounded-lg border-l-4 shadow-lg bg-[#131417] border-amber-500/80 transition-all duration-300 hover:bg-surface-container/50 flex flex-col"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-black uppercase tracking-tighter text-amber-500">
+                        Option {idx + 1}: {option.label}
+                      </span>
                     </div>
-                  ))
-                )}
-              </div>
+                    <p className="text-xs text-on-surface-variant leading-tight mb-4 flex-1">
+                      {option.description}
+                    </p>
+                    <button
+                      onClick={() => deployObjection(option)}
+                      className="w-full py-2 mt-auto bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500 hover:text-[#131417] text-[10px] font-black uppercase tracking-widest rounded transition-all"
+                    >
+                      Deploy This Objection
+                    </button>
+                  </div>
+                ))
+              ) : warnings.length === 0 ? (
+                <p className="text-xs text-on-surface-variant italic">No objections logged yet. Make your argument.</p>
+              ) : (
+                warnings.map((warning) => (
+                  <div
+                    key={warning.id}
+                    className={`p-4 rounded-lg border-l-4 shadow-lg bg-[#131417] transition-all duration-300 ${
+                      warning.type === "error"
+                        ? "border-red-500/80"
+                        : "border-amber-500/80"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span
+                        className={`text-xs font-black uppercase tracking-tighter ${
+                          warning.type === "error"
+                            ? "text-red-500"
+                            : "text-amber-500"
+                        }`}
+                      >
+                        {warning.role || opponentRole}: {warning.label}
+                      </span>
+                      <span className="text-[10px] text-on-surface-variant">
+                        {warning.timestamp}
+                      </span>
+                    </div>
+                    <p className="text-xs text-on-surface-variant leading-tight">
+                      {warning.description.startsWith("Coach: ")
+                        ? warning.description.replace(/^Coach:\s*/, "")
+                        : warning.description}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Tactical Advice */}
-            <div className="mt-8 border-t border-outline-variant/10 pt-6">
+            <div className="mt-8 border-t border-outline-variant/10 pt-6 shrink-0">
               <p className="text-[10px] text-on-surface-variant font-bold uppercase mb-3">
                 Tactical Opportunity
               </p>

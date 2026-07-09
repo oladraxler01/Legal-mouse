@@ -21,8 +21,17 @@ export async function POST(req: Request) {
     });
 
     return Response.json({ reply: text });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Assistant API Error:', error);
+    
+    // Detect API quota limit exhaustion
+    if (error.statusCode === 429 || (error.message && error.message.toLowerCase().includes('quota'))) {
+      return Response.json(
+        { error: 'Gemini API free-tier quota exceeded (limit 20 requests/day). Please update GOOGLE_GENERATIVE_AI_API_KEY in your .env.local file with a standard/paid tier key, or try again later.' },
+        { status: 429 }
+      );
+    }
+    
     return Response.json(
       { error: 'Failed to generate a response.' },
       { status: 500 }

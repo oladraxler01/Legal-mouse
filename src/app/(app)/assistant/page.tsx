@@ -1,37 +1,89 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { 
   Send, 
   Sparkles, 
   User, 
   ArrowLeft,
-  Search,
-  BookOpen,
-  Scale,
   BrainCircuit,
-  MessageSquare,
   HelpCircle
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  parts: Array<{ type: 'text' | 'reasoning'; text: string }>;
+}
+
 export default function AssistantPage() {
-  const { messages, sendMessage } = useChat();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
 
-  const handleSubmit = (e?: { preventDefault?: () => void }) => {
-    e?.preventDefault?.();
-    if (!input.trim()) return;
-    sendMessage({ text: input });
-    setInput('');
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim()) return;
+
+    const userMessage: ChatMessage = {
+      id: `msg_${Date.now()}_user`,
+      role: 'user',
+      parts: [{ type: 'text', text: text }]
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: text }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const assistantMessage: ChatMessage = {
+          id: `msg_${Date.now()}_assistant`,
+          role: 'assistant',
+          parts: [{ type: 'text', text: data.reply || '' }]
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData.error || "Sorry, I encountered an error. Please try again.";
+        const errorMessage: ChatMessage = {
+          id: `msg_${Date.now()}_error`,
+          role: 'assistant',
+          parts: [{ type: 'text', text: errMsg }]
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error("Chat Error:", error);
+      const errorMessage: ChatMessage = {
+        id: `msg_${Date.now()}_error`,
+        role: 'assistant',
+        parts: [{ type: 'text', text: "Failed to connect to the assistant server." }]
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  console.log("Assistant Chat State:", { input, handleInputChange: !!handleInputChange, messagesCount: messages.length });
+  const handleSubmit = (e?: { preventDefault?: () => void }) => {
+    e?.preventDefault?.();
+    if (!input.trim() || isLoading) return;
+    const text = input;
+    setInput('');
+    handleSendMessage(text);
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -40,7 +92,7 @@ export default function AssistantPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const suggestions = [
     "Explain promissory estoppel",
@@ -49,7 +101,8 @@ export default function AssistantPage() {
   ];
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage({ text: suggestion });
+    if (isLoading) return;
+    handleSendMessage(suggestion);
   };
 
   return (
@@ -126,7 +179,7 @@ export default function AssistantPage() {
                 }`}
               >
                 <div 
-                  className={`leading-relaxed text-lg whitespace-pre-wrap ${!isUser ? "font-serif" : "font-body"}`}
+                  className={`leading-relaxed text-lg whitespace-pre-wrap ${isUser ? "font-body" : "font-serif"}`}
                   style={!isUser ? { fontFamily: 'var(--font-crimson)' } : {}}
                 >
                   {m.parts.map((part, index) => {
@@ -143,6 +196,27 @@ export default function AssistantPage() {
             </div>
           );
         })}
+
+        {isLoading && (
+          <div className="flex flex-col items-start animate-in slide-in-from-left-4 duration-300">
+            <div className="flex items-center gap-3 mb-2 px-1">
+              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/40 animate-pulse">
+                Legal Mouse AI is thinking...
+              </span>
+            </div>
+            <div className="bg-surface-container-high text-on-surface rounded-2xl rounded-tl-none border border-outline-variant/10 p-6 shadow-sm">
+              <div className="flex items-center gap-1 py-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -182,7 +256,7 @@ export default function AssistantPage() {
                />
                <button 
                 type="submit"
-                disabled={!input?.trim()}
+                disabled={!input?.trim() || isLoading}
                 className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:shadow-none"
                >
                  <Send className="w-5 h-5" />
