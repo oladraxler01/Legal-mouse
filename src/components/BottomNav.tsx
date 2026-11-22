@@ -86,7 +86,7 @@ export default function BottomNav() {
       </AnimatePresence>
 
       {/* ── Bottom bar ──────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface/90 backdrop-blur-2xl border-t border-outline-variant/15 pb-[env(safe-area-inset-bottom)]">
+      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface border-t border-outline-variant/15 pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5 h-16">
           {primary.map(({ href, label, shortLabel, icon: Icon }) => {
             const active = isActiveLink(pathname, href);

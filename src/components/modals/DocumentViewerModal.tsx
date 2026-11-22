@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { X, ExternalLink, Scale, Book, FileText, Download } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -19,6 +19,23 @@ export default function DocumentViewerModal({
   fileUrl,
   resourceType = "default"
 }: DocumentViewerModalProps) {
+  // Stop the page behind the viewer from scrolling while it is open.
+  useEffect(() => {
+    if (!isOpen) return;
+    const main = document.querySelector("main");
+    const prevMain = main?.style.overflow ?? "";
+    const prevBody = document.body.style.overflow;
+    if (main) main.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      if (main) main.style.overflow = prevMain;
+      document.body.style.overflow = prevBody;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Determine which icon to render on the top left
@@ -46,14 +63,14 @@ export default function DocumentViewerModal({
     : `${fileUrl}#toolbar=1`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+    <div className="fixed inset-0 z-[10002] flex items-center justify-center md:p-8">
       {/* Semi-transparent dark backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70"
       />
 
       {/* Modal Container */}
@@ -61,15 +78,15 @@ export default function DocumentViewerModal({
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative w-full max-w-5xl h-[85vh] bg-surface-container-low border border-outline-variant/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+        className="relative w-full h-[100dvh] md:h-[85vh] md:max-w-5xl bg-surface-container-low md:border border-outline-variant/10 md:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
       >
         {/* Top Control Header */}
-        <div className="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low">
-          <div className="flex items-center gap-4 truncate">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+        <div className="px-4 py-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] md:p-6 border-b border-outline-variant/10 flex justify-between items-center gap-3 bg-surface-container-low">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-lg bg-primary/10 items-center justify-center text-primary flex-shrink-0">
               {renderIcon()}
             </div>
-            <h2 className="font-serif text-xl md:text-2xl font-bold text-on-surface truncate pr-4">
+            <h2 className="font-serif text-base md:text-2xl font-bold text-on-surface leading-snug line-clamp-2">
               {title}
             </h2>
           </div>
@@ -97,7 +114,7 @@ export default function DocumentViewerModal({
         </div>
 
         {/* Content Viewer Body */}
-        <div className="flex-1 bg-white relative">
+        <div className="flex-1 min-h-0 bg-white relative overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
           <iframe
             src={embedUrl}
             className="w-full h-full border-none"
@@ -107,8 +124,17 @@ export default function DocumentViewerModal({
         </div>
 
         {/* Bottom Utility Anchor */}
-        <div className="p-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-between items-center text-xs font-label">
-          <span className="text-on-surface-variant">Source: Legal Mouse Authorities Hub</span>
+        <div className="px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:p-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-between items-center gap-3 text-xs font-label">
+          <span className="hidden md:inline text-on-surface-variant">Source: Legal Mouse Authorities Hub</span>
+          {/* On phones, documents read best full screen in the browser's own viewer */}
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="md:hidden flex-1 text-center bg-primary text-on-primary font-bold rounded-xl py-3 text-sm"
+          >
+            Open full screen
+          </a>
           <a
             href={fileUrl}
             target="_blank"

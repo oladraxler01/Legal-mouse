@@ -133,3 +133,21 @@
   background-color: var(--secondary-container);
   color: var(--on-surface);
 }
+
+/* ─── Mobile scroll stability ───
+   Stop the page from bouncing or sliding sideways on phones; the app scrolls inside <main>. */
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* iPhone zooms the page when a text box under 16px is focused; keep inputs at 16px on phones. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

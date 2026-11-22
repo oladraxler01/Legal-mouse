@@ -11,7 +11,7 @@ export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-surface border-r border-outline-variant/10 z-40 transition-colors duration-300">
+    <aside className="hidden md:flex flex-col w-64 h-[100dvh] fixed left-0 top-0 bg-surface border-r border-outline-variant/10 z-40 transition-colors duration-300">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-8 flex-shrink-0" style={{ height: '80px' }}>
         <div className="flex items-center gap-3">

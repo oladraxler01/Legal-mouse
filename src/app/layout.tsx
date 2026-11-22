@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import React from "react";
 import { Manrope, Inter, Crimson_Pro } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
@@ -21,6 +21,13 @@ const crimsonPro = Crimson_Pro({
   subsets: ["latin"],
   display: "swap",
 });
+
+// viewport-fit=cover lets the layout use the iPhone safe areas (notch and home bar).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Legal Mouse — All-in-One Legal Learning Platform",

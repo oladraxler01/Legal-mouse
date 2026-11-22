@@ -337,7 +337,7 @@ export default function GroupChatPage() {
 
   /* ── Chat ────────────────────────────────────────── */
   return (
-    <div className="flex h-screen bg-surface text-on-surface overflow-hidden">
+    <div className="flex h-full bg-surface text-on-surface overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 border-r border-outline-variant/10">
         <header className="h-20 flex items-center justify-between px-6 bg-surface-container border-b border-outline-variant/10 shrink-0">
           <div className="flex items-center gap-4 min-w-0">

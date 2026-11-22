@@ -106,7 +106,7 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-surface overflow-hidden">
+    <div className="flex flex-col h-full bg-surface overflow-hidden">
       {/* Header */}
       <header className="h-20 flex items-center justify-between px-6 bg-surface-container border-b border-outline-variant/10 shrink-0 z-10">
         <div className="flex items-center gap-4">
