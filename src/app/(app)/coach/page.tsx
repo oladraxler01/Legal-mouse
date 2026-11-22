@@ -1452,7 +1452,7 @@ Extra Context: ${activeSimulationContext}
       {/* ═══════════════════════════════════════════════
           FLOATING COMMAND FOOTER TRACK
           ═══════════════════════════════════════════════ */}
-      <footer className="h-16 md:h-20 bg-surface border-t border-outline-variant/10 px-4 md:px-12 flex items-center justify-between z-50">
+      <footer className="sticky bottom-0 h-16 md:h-20 bg-surface border-t border-outline-variant/10 px-4 md:px-12 flex items-center justify-between z-40">
         {/* Left Action: Object Button */}
         <div className="flex-1">
           <button className="flex items-center gap-2 px-4 md:px-6 py-2 rounded-full bg-amber-600/10 border border-amber-600/30 text-amber-500 hover:bg-amber-600/20 transition-all">
@@ -1467,7 +1467,7 @@ Extra Context: ${activeSimulationContext}
         </div>
 
         {/* Center: Mic State Readout */}
-        <div className="flex-none text-center">
+        <div className="flex-none text-center hidden sm:block">
           <span
             className={`text-[10px] font-bold uppercase tracking-widest ${
               isListening ? "text-primary" : "text-on-surface-variant"

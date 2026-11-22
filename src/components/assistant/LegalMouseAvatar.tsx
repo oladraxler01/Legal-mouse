@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { X, Mic, MicOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -48,6 +48,24 @@ export default function LegalMouseAvatar() {
 
   const recognitionRef = useRef<any>(null);
   const voice = useVoice();
+
+  /* ── Draggable launcher: remembers where the user leaves it ── */
+  const dragAreaRef = useRef<HTMLDivElement>(null);
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
+  const wasDraggedRef = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("legalmouse-avatar-pos") || "null");
+      if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
+        // Offsets are relative to the default bottom-right spot; keep them on screen.
+        dragX.set(Math.max(-(window.innerWidth - 90), Math.min(0, saved.x)));
+        dragY.set(Math.max(-(window.innerHeight - 200), Math.min(0, saved.y)));
+      }
+    } catch {
+      /* ignore bad saved data */
+    }
+  }, [dragX, dragY]);
   const stopVoice = voice.stop;
 
   /* ── Cleanup on unmount ───────────────────────────────────── */
@@ -230,7 +248,10 @@ export default function LegalMouseAvatar() {
       };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
+    <>
+      {/* Area the launcher can be dragged within (clear of the mobile bottom bar) */}
+      <div ref={dragAreaRef} aria-hidden className="fixed left-2 right-2 top-2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-2 pointer-events-none" />
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -238,7 +259,7 @@ export default function LegalMouseAvatar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95, transition: { duration: 0.2 } }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-80 md:w-96 h-[450px] bg-surface-container-low border border-outline-variant/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4"
+            className="fixed z-[9999] right-3 left-3 sm:left-auto bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6 sm:w-96 h-[450px] max-h-[calc(100dvh-7rem)] bg-surface-container-low border border-outline-variant/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* ── Header ─────────────────────────────────────── */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/10 bg-surface-container">
@@ -348,7 +369,7 @@ export default function LegalMouseAvatar() {
                 className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg ${
                   voiceState === "listening"
                     ? "bg-red-500 text-white shadow-red-500/30"
-                    : voiceState === "processing" || voiceState === "speaking"
+                    : voiceState === "processing"
                     ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-60"
                     : "bg-primary text-on-primary hover:shadow-xl"
                 }`}
@@ -364,28 +385,46 @@ export default function LegalMouseAvatar() {
         )}
       </AnimatePresence>
 
-      {/* ── Floating Action Button (Idle – Collapsed) ──────── */}
+      {/* ── Floating launcher: drag to move, tap to open ──────── */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
+            drag
+            dragConstraints={dragAreaRef}
+            dragMomentum={false}
+            dragElastic={0.08}
+            style={{ x: dragX, y: dragY }}
+            onDragStart={() => {
+              wasDraggedRef.current = true;
+            }}
+            onDragEnd={() => {
+              localStorage.setItem("legalmouse-avatar-pos", JSON.stringify({ x: dragX.get(), y: dragY.get() }));
+              // Let the click that ends a drag pass without opening the panel.
+              setTimeout(() => (wasDraggedRef.current = false), 50);
+            }}
+            onClick={() => {
+              if (!wasDraggedRef.current) setIsOpen(true);
+            }}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsOpen(true)}
-            className="w-14 h-14 md:w-16 md:h-16 rounded-full shadow-lg relative group overflow-hidden border-2 border-primary/30 bg-surface-container"
+            whileDrag={{ scale: 1.12, cursor: "grabbing" }}
+            aria-label="Open LegalMouse voice assistant (drag to move)"
+            title="Tap to talk, drag to move"
+            className="fixed z-[9999] right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-lg overflow-hidden border-2 border-primary/30 bg-surface-container touch-none cursor-grab"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/mouse-avatar.png"
-              alt="LegalMouse"
-              className="absolute inset-0 w-full h-full object-cover rounded-full"
+              alt=""
+              draggable={false}
+              className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none"
             />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-surface z-20" />
+            <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-surface z-20" />
           </motion.button>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

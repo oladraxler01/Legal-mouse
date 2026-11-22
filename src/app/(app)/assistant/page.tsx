@@ -132,7 +132,7 @@ export default function AssistantPage() {
       </header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-surface pb-40">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-surface pb-64 md:pb-40">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto space-y-8 animate-in fade-in zoom-in duration-700">
             <div className="w-24 h-24 rounded-[2.5rem] bg-surface-container-low border border-outline-variant/5 flex items-center justify-center shadow-inner relative">
@@ -221,7 +221,7 @@ export default function AssistantPage() {
       </div>
 
       {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-surface z-20">
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 md:left-64 right-0 p-4 md:p-6 bg-surface z-20">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Suggestions */}
           {messages.length === 0 && (

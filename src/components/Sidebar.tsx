@@ -2,31 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  MessageSquare, 
-  FileText, 
-  Scale, 
-  Users, 
-  UserCircle,
-  Sun,
-  Moon,
-  PlaySquare,
-  Gavel
-} from "lucide-react";
+import { Scale, Sun, Moon } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-
-const navLinks = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/assistant", label: "Assistant", icon: MessageSquare },
-  { href: "/notes", label: "Summary Notes", icon: FileText },
-  { href: "/authorities", label: "Authorities", icon: Scale },
-  { href: "/videos", label: "Video Vault", icon: PlaySquare },
-  { href: "/community", label: "Community", icon: Users },
-  { href: "/templates", label: "Templates", icon: FileText },
-  { href: "/coach", label: "Coach", icon: Gavel },
-  { href: "/profile", label: "Profile", icon: UserCircle },
-];
+import { NAV_LINKS, isActiveLink } from "./navLinks";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -48,13 +26,13 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 flex flex-col gap-1.5 px-4 mt-6 overflow-y-auto">
-        {navLinks.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
+        {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+          const isActive = isActiveLink(pathname, href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-4 rounded-xl px-4 py-3.5 text-sm font-label font-bold transition-all duration-300 group ${
+              className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-label font-bold transition-all duration-300 group ${
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "text-on-surface-variant/60 hover:bg-primary/5 hover:text-on-surface"

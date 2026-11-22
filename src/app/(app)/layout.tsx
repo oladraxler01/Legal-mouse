@@ -10,7 +10,7 @@ export default function AppLayout({
   return (
     <div className="flex h-screen bg-surface text-on-surface font-label">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 pb-20 md:pb-0 overflow-y-auto">
+      <main className="flex-1 ml-0 md:ml-64 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 overflow-y-auto">
         {children}
       </main>
       <BottomNav />

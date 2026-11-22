@@ -306,7 +306,7 @@ export default function ProcedureBriefing({ nature, caseTitle, onComplete, onExi
           </AnimatePresence>
 
           {/* ── Navigation with pointing arrow ──── */}
-          <div className="max-w-4xl w-full flex items-center justify-between pt-10 pb-20 md:pb-0 md:pr-24">
+          <div className="max-w-4xl w-full flex items-center justify-between pt-10 pb-20 md:pb-0 pr-20 md:pr-24">
             <button
               onClick={() => goTo(index - 1)}
               disabled={index === 0}
