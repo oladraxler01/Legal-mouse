@@ -37,6 +37,9 @@ export default function StudyGroupsPage() {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [newGroupPrivate, setNewGroupPrivate] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [inviteInput, setInviteInput] = useState("");
 
   const fetchGroups = async () => {
     const supabase = createClient();
@@ -66,8 +69,10 @@ export default function StudyGroupsPage() {
     const { data: allGroups, error: allError } = await supabase
       .from("study_groups")
       .select("*")
+      .eq("is_private", false)
       .not("id", "in", `(${memberGroupIds.length > 0 ? memberGroupIds.join(",") : "00000000-0000-0000-0000-000000000000"})`)
-      .limit(1); // Only one for now
+      .order("created_at", { ascending: false })
+      .limit(20);
 
     if (allError) console.error("Error fetching all groups:", allError);
 
@@ -95,7 +100,7 @@ export default function StudyGroupsPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/auth/login");
+      router.push("/login");
       return;
     }
 
@@ -109,11 +114,8 @@ export default function StudyGroupsPage() {
         throw joinError;
       }
 
-      // 2. Increment member count (optimistic)
-      await supabase
-        .rpc('increment_member_count', { group_id: groupId });
-
-      // 3. Redirect to chat
+      // Member count is kept up to date by the database.
+      // 2. Redirect to chat
       router.push(`/groups/${groupId}`);
     } catch (error) {
       console.error("Error joining group:", error);
@@ -130,53 +132,36 @@ export default function StudyGroupsPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (!user) { setIsCreating(false); return; }
 
-    try {
-      const { data: newGroup, error: createError } = await supabase
-        .from("study_groups")
-        .insert({
-          name: newGroupName,
-          description: newGroupDesc,
-          member_count: 1,
-          is_private: false
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        if (createError.code === "42501") {
-          alert("Database access denied. Please ensure your Supabase RLS policies allow group creation.");
-        }
-        throw createError;
-      }
-
-      // Add as member
-      await supabase
-        .from("group_members")
-        .insert({ group_id: newGroup.id, user_id: user.id });
-
-      // Redirect
-      router.push(`/groups/${newGroup.id}`);
-    } catch (error) {
+    setCreateError(null);
+    const { data, error } = await supabase.rpc("create_study_group", {
+      p_name: newGroupName.trim(),
+      p_description: newGroupDesc.trim(),
+      p_is_private: newGroupPrivate,
+    });
+    const created = Array.isArray(data) ? data[0] : data;
+    if (error || !created) {
       console.error("Error creating group:", error);
-    } finally {
+      setCreateError("The group couldn't be created. Please try again.");
       setIsCreating(false);
-      setIsModalOpen(false);
+      return;
     }
+    setIsModalOpen(false);
+    setIsCreating(false);
+    router.push(`/groups/${created.id}`);
   };
 
-  // Mock data if DB is empty
-  const mockYourGroups: StudyGroup[] = [
-    { id: "00000000-0000-0000-0000-000000000001", name: "Contract Law Core", description: "In-depth discussions on contracts", topic: "Contract Law", member_count: 12, is_private: true, last_active: "Active now", is_member: true },
-  ];
+  const openInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = inviteInput.trim().split("/").filter(Boolean).pop();
+    if (code) router.push(`/groups/join/${code}`);
+  };
 
-  const mockDiscoverGroups: StudyGroup[] = [
-    { id: "00000000-0000-0000-0000-000000000002", name: "Criminal Law Masters", description: "Deep dives into criminal statutes and case law", topic: "Criminal Law", member_count: 8, is_private: false, last_active: "Active recently" },
-  ];
-
-  const displayYourGroups = yourGroups.length > 0 ? yourGroups : mockYourGroups;
-  const displayDiscoverGroups = discoverGroups.length > 0 ? discoverGroups : mockDiscoverGroups;
+  const matches = (g: StudyGroup) =>
+    `${g.name} ${g.description || ""}`.toLowerCase().includes(searchQuery.toLowerCase());
+  const displayYourGroups = yourGroups.filter(matches);
+  const displayDiscoverGroups = discoverGroups.filter(matches);
 
   return (
     <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32">
@@ -223,6 +208,19 @@ export default function StudyGroupsPage() {
                   className="w-full bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-4 outline-none focus:border-primary/50 transition-all resize-none text-on-surface"
                 />
               </div>
+              <label className="flex items-start gap-3 cursor-pointer select-none px-1">
+                <input
+                  type="checkbox"
+                  checked={newGroupPrivate}
+                  onChange={(e) => setNewGroupPrivate(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-[var(--primary)]"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-on-surface">Private group</span>
+                  <span className="block text-xs text-on-surface-variant/70">Hidden from Discover. People can only join with your invite link.</span>
+                </span>
+              </label>
+              {createError && <p className="text-sm text-red-600 font-medium px-1">{createError}</p>}
               <div className="flex gap-4 pt-2">
                 <button 
                   type="button"
@@ -256,12 +254,25 @@ export default function StudyGroupsPage() {
         />
       </div>
 
+      {/* Join with an invite link */}
+      <form onSubmit={openInvite} className="flex gap-3 mb-12 -mt-6">
+        <input
+          value={inviteInput}
+          onChange={(e) => setInviteInput(e.target.value)}
+          placeholder="Have an invite link? Paste it here"
+          className="flex-1 bg-surface-container-low border border-outline-variant/10 rounded-xl px-4 py-3 outline-none focus:border-primary/30 text-sm text-on-surface"
+        />
+        <button type="submit" disabled={!inviteInput.trim()} className="px-5 py-3 rounded-xl bg-primary/10 text-primary font-bold text-sm disabled:opacity-40">
+          Join
+        </button>
+      </form>
+
       {/* Your Groups */}
       <section className="mb-16">
         <h2 className="font-headline text-xl font-bold mb-6 text-on-surface">Your Groups</h2>
         <div className="space-y-4">
           {displayYourGroups.length === 0 ? (
-            <p className="text-on-surface-variant/40 text-sm italic ml-4 font-body">You haven't joined any groups yet.</p>
+            <p className="text-on-surface-variant/40 text-sm italic ml-4 font-body">You haven&apos;t joined any groups yet.</p>
           ) : (
             displayYourGroups.map(group => (
               <Link 
@@ -294,6 +305,11 @@ export default function StudyGroupsPage() {
       <section>
         <h2 className="font-headline text-xl font-bold mb-6 text-on-surface">Discover Groups</h2>
         <div className="space-y-6">
+          {displayDiscoverGroups.length === 0 && (
+            <p className="text-on-surface-variant/40 text-sm italic ml-4 font-body">
+              No public groups to discover yet. Create one with the + button.
+            </p>
+          )}
           {displayDiscoverGroups.map(group => (
             <div 
               key={group.id} 

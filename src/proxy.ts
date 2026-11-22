@@ -72,7 +72,10 @@ export async function proxy(req: NextRequest) {
   );
 
   if (isProtectedRoute && !session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    // Remember where the user was going (e.g. a group invite link) so login can send them back.
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("next", pathname + url.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (isAuthRoute && session) {

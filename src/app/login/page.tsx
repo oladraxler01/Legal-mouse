@@ -31,7 +31,9 @@ export default function LoginPage() {
       setError(loginError.message);
       setIsLoading(false);
     } else {
-      router.push("/dashboard");
+      // Return to the page that required login, if it is a safe in-app path.
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
     }
   };
 
