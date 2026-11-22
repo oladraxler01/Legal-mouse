@@ -3,6 +3,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { ADMIN_COOKIE, ADMIN_SESSION_SECONDS, createAdminToken, verifyAdminToken } from "@/lib/adminSession";
+
+async function isAdmin(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return verifyAdminToken(cookieStore.get(ADMIN_COOKIE)?.value);
+}
 
 // Initialize Supabase admin client with service role key to bypass RLS
 function getAdminSupabase() {
@@ -28,7 +34,11 @@ function getAdminSupabase() {
 export async function loginAdminAction(formData: FormData): Promise<{ success: boolean; error?: string }> {
   try {
     const password = (formData.get("password") as string)?.trim();
-    const masterPassphrase = process.env.ADMIN_MASTER_PASSPHRASE || "LegalMouseTeam2026";
+    const masterPassphrase = process.env.ADMIN_MASTER_PASSPHRASE;
+
+    if (!masterPassphrase) {
+      return { success: false, error: "Admin access is not configured. Set ADMIN_MASTER_PASSPHRASE on the server." };
+    }
 
     if (!password) {
       return { success: false, error: "Please enter the admin master passphrase." };
@@ -38,14 +48,14 @@ export async function loginAdminAction(formData: FormData): Promise<{ success: b
       return { success: false, error: "Incorrect passphrase. Access denied." };
     }
 
-    // Set secure long-lived HTTP-only cookie
+    // Set a signed, expiring HTTP-only session cookie
     const cookieStore = await cookies();
-    cookieStore.set("admin_session", "authenticated", {
+    cookieStore.set(ADMIN_COOKIE, await createAdminToken(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: ADMIN_SESSION_SECONDS,
     });
 
     return { success: true };
@@ -56,7 +66,7 @@ export async function loginAdminAction(formData: FormData): Promise<{ success: b
 
 export async function logoutAdminAction(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete("admin_session");
+  cookieStore.delete(ADMIN_COOKIE);
   redirect("/admin/login");
 }
 
@@ -76,9 +86,7 @@ export interface UploadActionResult {
 export async function universalUploadAction(formData: FormData): Promise<UploadActionResult> {
   try {
     // Verify admin session cookie
-    const cookieStore = await cookies();
-    const adminSession = cookieStore.get("admin_session")?.value;
-    if (!adminSession) {
+    if (!(await isAdmin())) {
       return { success: false, error: "Unauthorized. Please log in as admin." };
     }
 
@@ -239,9 +247,7 @@ export async function universalUploadAction(formData: FormData): Promise<UploadA
 
 export async function postAnnouncementAction(formData: FormData): Promise<UploadActionResult> {
   try {
-    const cookieStore = await cookies();
-    const adminSession = cookieStore.get("admin_session")?.value;
-    if (!adminSession) {
+    if (!(await isAdmin())) {
       return { success: false, error: "Unauthorized. Please log in as admin." };
     }
 
@@ -277,6 +283,7 @@ export async function postAnnouncementAction(formData: FormData): Promise<Upload
 
 export async function getAnnouncementsAction() {
   try {
+    if (!(await isAdmin())) return [];
     const supabase = getAdminSupabase();
     const { data, error } = await supabase
       .from("announcements")

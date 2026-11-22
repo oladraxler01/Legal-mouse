@@ -4,12 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
 import { getAnnouncementsAction } from "@/app/actions/admin";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/adminSession";
 
 export default async function AdminDashboardPage() {
   const cookieStore = await cookies();
-  const adminSession = cookieStore.get("admin_session")?.value;
-
-  if (!adminSession) {
+  if (!(await verifyAdminToken(cookieStore.get(ADMIN_COOKIE)?.value))) {
     redirect("/admin/login");
   }
 

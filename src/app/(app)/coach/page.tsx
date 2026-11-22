@@ -227,7 +227,19 @@ function CoachPageContent() {
   const [legalAccuracy, setLegalAccuracy] = useState(90);
   const [demeanor, setDemeanor] = useState(85);
   const [maximCount, setMaximCount] = useState(0);
-  const [timerDisplay] = useState("07:42 / 10:00");
+  /* ── Hearing timer: counts up from when the courtroom opens ── */
+  const HEARING_LIMIT_SECONDS = 10 * 60;
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (!isCaseInitialized) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [isCaseInitialized]);
+  const formatClock = (total: number) =>
+    `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  const timerDisplay = `${formatClock(elapsedSeconds)} / ${formatClock(HEARING_LIMIT_SECONDS)}`;
+  const isOverTime = elapsedSeconds >= HEARING_LIMIT_SECONDS;
 
   /* ── Functional Evidence Vault States ────────────── */
   const [exhibitAFile, setExhibitAFile] = useState<UploadedFile | null>(null);
@@ -970,7 +982,7 @@ Extra Context: ${activeSimulationContext}
         <div className="flex items-center gap-3 md:gap-4 flex-wrap">
           <span className="flex items-center gap-2 font-bold text-on-surface font-mono text-sm">
             <Clock className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-400">{timerDisplay}</span>
+            <span className={isOverTime ? "text-red-500" : "text-amber-400"}>{timerDisplay}</span>
           </span>
           <div className="hidden md:block h-4 w-px bg-outline-variant" />
           <span className="hidden md:inline px-3 py-1 bg-surface-container-high text-on-surface-variant text-[10px] font-bold rounded-full uppercase tracking-widest border border-outline-variant/20">

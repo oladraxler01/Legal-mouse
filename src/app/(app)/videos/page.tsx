@@ -25,7 +25,8 @@ interface VideoAnimation {
   course_name: string;
 }
 
-const mockVideos: VideoAnimation[] = [
+/* Built-in lectures shown until the team uploads videos through the admin portal. */
+const STARTER_VIDEOS: VideoAnimation[] = [
   {
     id: "v1",
     title: "Tort Law / Negligence",
@@ -101,39 +102,40 @@ export default function VideoGallery() {
       setLoading(true);
       const supabase = createClient();
 
+      // Admin uploads go to the `videos` table (see universalUploadAction).
       const { data, error } = await supabase
-        .from("video_animations")
-        .select(`
-          id,
-          title,
-          description,
-          duration,
-          thumbnail_url,
-          video_url,
-          youtube_id,
-          topic_id,
-          topics (
-            name,
-            courses (name)
-          )
-        `);
+        .from("videos")
+        .select("id, title, duration, thumbnail_url, video_url, tag, created_at")
+        .order("created_at", { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        console.log("Using mock data for Video Gallery");
-        setVideos(mockVideos);
+      if (error) console.error("Failed to load videos:", error);
+      const rows = (data || []) as {
+        id: string; title: string | null; duration: string | null; thumbnail_url: string | null;
+        video_url: string | null; tag: string | null;
+      }[];
+
+      if (rows.length === 0) {
+        setVideos(STARTER_VIDEOS);
       } else {
-        const transformed: VideoAnimation[] = data.map((v: any) => ({
-          id: v.id,
-          title: v.title || "Untitled Simulation",
-          description: v.description || "No description provided.",
-          duration: v.duration || "N/A",
-          thumbnail_url: v.thumbnail_url || "https://images.unsplash.com/photo-1505664194779-8beaceb93744?auto=format&fit=crop&q=80&w=800",
-          video_url: v.video_url || "",
-          youtube_id: v.youtube_id || undefined,
-          topic_id: v.topic_id,
-          course_name: v.topics?.courses?.name || v.topics?.name || "Legal Topic"
-        }));
-        setVideos(transformed);
+        setVideos(
+          rows.map((v) => {
+            const url = v.video_url || "";
+            const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            return {
+              id: v.id,
+              title: v.title || "Untitled video",
+              description: v.tag ? `${v.tag} lecture` : "Lecture from the Legal Mouse team.",
+              duration: v.duration || "N/A",
+              thumbnail_url:
+                v.thumbnail_url ||
+                (yt ? `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg` : "https://images.unsplash.com/photo-1505664194779-8beaceb93744?auto=format&fit=crop&q=80&w=800"),
+              video_url: yt ? "" : url,
+              youtube_id: yt ? yt[1] : undefined,
+              topic_id: v.id,
+              course_name: v.tag || "General",
+            };
+          })
+        );
       }
       setLoading(false);
     }

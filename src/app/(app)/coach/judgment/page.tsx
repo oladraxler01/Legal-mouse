@@ -8,7 +8,7 @@ import Image from "next/image";
 export default function JudgmentPage() {
   const router = useRouter();
   const [session, setSession] = useState<{
-    transcript: string;
+    transcriptHistory?: { role: "advocate" | "opponent"; text: string }[];
     warningsCount: number;
     accuracy: number;
     demeanor: number;
@@ -33,7 +33,7 @@ export default function JudgmentPage() {
   const accuracy = session?.accuracy ?? 88;
   const demeanor = session?.demeanor ?? 74;
   const warningsCount = session?.warningsCount ?? 2;
-  const transcript = session?.transcript ?? "No transcript recorded.";
+  const transcript = session?.transcriptHistory ?? [];
 
   const isSuccess = accuracy >= 75 && demeanor >= 70 && warningsCount <= 3;
 
@@ -142,9 +142,20 @@ export default function JudgmentPage() {
           <span className="text-[10px] uppercase font-bold tracking-wider text-on-surface-variant block mb-4">
             Recorded Oral Address
           </span>
-          <p className="font-serif italic text-on-surface-variant leading-relaxed bg-surface/50 p-4 rounded-xl border border-outline-variant/10 max-h-48 overflow-y-auto">
-            {transcript}
-          </p>
+          <div className="space-y-3 bg-surface/50 p-4 rounded-xl border border-outline-variant/10 max-h-64 overflow-y-auto">
+            {transcript.length === 0 ? (
+              <p className="font-serif italic text-on-surface-variant">No transcript recorded.</p>
+            ) : (
+              transcript.map((entry, i) => (
+                <div key={i}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${entry.role === "advocate" ? "text-primary" : "text-amber-600"}`}>
+                    {entry.role === "advocate" ? "You" : "Opposing counsel"}
+                  </span>
+                  <p className="font-serif italic text-on-surface-variant leading-relaxed">{entry.text}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* Actions */}

@@ -1,3 +1,4 @@
+import { getSessionUser, unauthorizedResponse } from "@/lib/supabaseServer";
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 
@@ -5,6 +6,7 @@ import { streamText } from 'ai';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  if (!(await getSessionUser())) return unauthorizedResponse();
   const { messages } = await req.json();
   
   const coreMessages = messages.map((m: any) => {

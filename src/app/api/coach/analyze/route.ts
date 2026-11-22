@@ -1,9 +1,11 @@
+import { getSessionUser, unauthorizedResponse } from "@/lib/supabaseServer";
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  if (!(await getSessionUser())) return unauthorizedResponse();
   try {
     const { transcript, documents, courtTurn = 'USER_ARGUMENT', caseNature = 'CRIMINAL' } = await req.json();
 

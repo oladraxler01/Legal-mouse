@@ -1,41 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  ArrowLeft, 
-  ArrowUp, 
-  CheckCircle, 
-  Share2,
-  MoreVertical
-} from "lucide-react";
+import { ArrowLeft, ArrowUp, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-interface Topic {
-  id: string;
-  name: string;
-}
-
-interface Author {
-  name: string;
-  is_top_contributor: boolean;
-  avatar_initial: string;
-}
-
-interface Comment {
-  id: string;
-  body: string;
-  author: Author;
-  created_at: string;
-}
+import { createClient } from "@/lib/supabase";
+import { loadAuthors, timeAgo, type AuthorInfo } from "@/lib/community";
 
 interface Answer {
   id: string;
   body: string;
   upvotes: number;
   is_accepted: boolean;
-  author: Author;
-  comments: Comment[];
+  author: AuthorInfo;
   created_at: string;
 }
 
@@ -43,73 +20,117 @@ interface QuestionDetail {
   id: string;
   title: string;
   body: string;
-  author: Author;
-  topic: Topic;
+  author: AuthorInfo;
+  course: string;
   tags: string[];
+  answer_count: number;
   created_at: string;
 }
-
-const mockQuestion: QuestionDetail = {
-  id: "q1",
-  title: "Can silence constitute acceptance in contract law?",
-  body: "I'm studying the case of Felthouse v Bindley. The uncle stated 'If I hear no more about him, I consider the horse mine at that price'. Does this mean silence can never be acceptance, or are there exceptions in modern law?",
-  author: { name: "Sarah Chen", is_top_contributor: true, avatar_initial: "S" },
-  topic: { id: "1", name: "Contract Law" },
-  tags: ["Acceptance", "Contract Formation", "Felthouse v Bindley"],
-  created_at: "2024-04-23T10:00:00Z"
-};
-
-const mockAnswers: Answer[] = [
-  {
-    id: "a1",
-    body: "The general rule from Felthouse v Bindley is that silence does not constitute acceptance. However, modern law has established some exceptions. For example, if there's a prior course of dealing where silence has been treated as acceptance, it might be valid.",
-    upvotes: 18,
-    is_accepted: true,
-    author: { name: "James Miller", is_top_contributor: false, avatar_initial: "J" },
-    created_at: "2024-04-23T11:30:00Z",
-    comments: [
-      {
-        id: "c1",
-        body: "Good point about the prior course of dealing. Selectmove Ltd is also a relevant case here.",
-        author: { name: "Emma Wilson", is_top_contributor: true, avatar_initial: "E" },
-        created_at: "2024-04-23T12:00:00Z"
-      }
-    ]
-  },
-  {
-    id: "a2",
-    body: "Another exception is where the offeree themselves suggests that silence shall be recorded as acceptance. If the offeree is the one setting the terms for their own silence, the court is more likely to enforce it.",
-    upvotes: 12,
-    is_accepted: false,
-    author: { name: "David Lee", is_top_contributor: false, avatar_initial: "D" },
-    created_at: "2024-04-23T14:45:00Z",
-    comments: []
-  }
-];
 
 export default function QuestionDetailPage() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [newAnswer, setNewAnswer] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+
+  async function loadThread() {
+    const supabase = createClient();
+    const { data: q, error } = await supabase
+      .from("questions")
+      .select("id, title, body, tags, answer_count, created_at, author_id")
+      .eq("id", String(id))
+      .maybeSingle();
+    if (error || !q) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    const { data: rows } = await supabase
+      .from("answers")
+      .select("id, body, upvotes, is_accepted, created_at, author_id")
+      .eq("question_id", q.id)
+      .order("is_accepted", { ascending: false })
+      .order("upvotes", { ascending: false });
+    const answerRows = (rows || []) as { id: string; body: string; upvotes: number | null; is_accepted: boolean | null; created_at: string; author_id: string | null }[];
+    const authorOf = await loadAuthors(supabase, [q.author_id, ...answerRows.map((a) => a.author_id)]);
+    const tags: string[] = q.tags || [];
+    setQuestion({
+      id: q.id,
+      title: q.title,
+      body: q.body || "",
+      author: authorOf(q.author_id),
+      course: tags[0] || "General",
+      tags: tags.slice(1),
+      answer_count: q.answer_count ?? 0,
+      created_at: q.created_at,
+    });
+    setAnswers(
+      answerRows.map((a) => ({
+        id: a.id,
+        body: a.body,
+        upvotes: a.upvotes ?? 0,
+        is_accepted: !!a.is_accepted,
+        author: authorOf(a.author_id),
+        created_at: a.created_at,
+      }))
+    );
+    setLoading(false);
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      // Logic for Supabase fetch would go here
-      // For now using high-fidelity mocks
-      setTimeout(() => {
-        setQuestion({ ...mockQuestion, id: String(id) });
-        setAnswers(mockAnswers);
-        setLoading(false);
-      }, 500);
-    }
-    fetchData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadThread();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  async function postAnswer() {
+    if (!question || newAnswer.trim().length < 10) {
+      setPostError("Please write at least a sentence or two.");
+      return;
+    }
+    setPosting(true);
+    setPostError(null);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setPosting(false);
+      setPostError("Please log in to answer.");
+      return;
+    }
+    const { error } = await supabase
+      .from("answers")
+      .insert({ question_id: question.id, body: newAnswer.trim(), author_id: user.id, upvotes: 0, is_accepted: false });
+    if (error) {
+      console.error("Failed to post answer:", error);
+      setPosting(false);
+      setPostError("Your answer couldn't be posted. Please try again.");
+      return;
+    }
+    // Keep the list page's answer count in step (ignored if not permitted).
+    await supabase.from("questions").update({ answer_count: question.answer_count + 1 }).eq("id", question.id);
+    setNewAnswer("");
+    setPosting(false);
+    await loadThread();
+  }
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-surface p-12 flex flex-col items-center justify-center gap-4 text-on-surface-variant">
+        <p className="font-serif italic text-lg">This question could not be found.</p>
+        <Link href="/community" className="text-primary font-bold">Back to Community</Link>
+      </div>
+    );
+  }
 
   if (loading || !question) {
     return (
-      <div className="min-h-screen bg-[#000000] p-12 flex items-center justify-center text-zinc-500 font-serif italic">
+      <div className="min-h-screen bg-surface p-12 flex items-center justify-center text-on-surface-variant font-serif italic">
         Loading discussion thread...
       </div>
     );
@@ -138,15 +159,11 @@ export default function QuestionDetailPage() {
               {question.author.avatar_initial}
             </div>
             <span className="font-medium text-on-surface">{question.author.name}</span>
-            {question.author.is_top_contributor && (
-              <span className="bg-primary/20 text-primary text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-primary/20">
-                Top Contributor
-              </span>
-            )}
+            <span className="text-xs text-on-surface-variant/60">{timeAgo(question.created_at)}</span>
           </div>
           <div className="h-4 w-[1px] bg-outline-variant/20 hidden md:block" />
           <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-primary/10">
-            {question.topic.name}
+            {question.course}
           </span>
           <div className="flex gap-2">
             {question.tags.map(tag => (
@@ -172,9 +189,10 @@ export default function QuestionDetailPage() {
             placeholder="Share your legal analysis here..."
             className="w-full h-40 bg-transparent resize-none outline-none text-on-surface font-body text-base placeholder:text-on-surface-variant/30"
           />
-          <div className="flex justify-end mt-4 pt-4 border-t border-outline-variant/10">
-            <button className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
-              Post Answer
+          <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-outline-variant/10">
+            <p className="text-sm text-red-600 font-medium">{postError}</p>
+            <button onClick={postAnswer} disabled={posting} className="disabled:opacity-50 bg-primary text-on-primary px-8 py-3 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+              {posting ? "Posting..." : "Post Answer"}
             </button>
           </div>
         </div>
@@ -184,20 +202,19 @@ export default function QuestionDetailPage() {
       <section>
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-headline text-2xl font-bold text-on-surface">{answers.length} Answers</h2>
-          <div className="flex items-center gap-2 text-on-surface-variant/40 text-sm font-label font-bold uppercase tracking-widest">
-            Sort by: <span className="text-primary hover:underline cursor-pointer">Votes</span>
-          </div>
+
         </div>
 
+        {answers.length === 0 && (
+          <p className="text-on-surface-variant/60 font-serif italic">No answers yet. Share what you know.</p>
+        )}
         <div className="space-y-8">
           {answers.map((answer) => (
             <div key={answer.id} className="bg-surface-container-lowest border border-outline-variant/10 rounded-3xl p-6 md:p-8 shadow-sm">
               <div className="flex gap-6">
                 {/* Voting Left */}
                 <div className="flex flex-col items-center gap-1 pt-1">
-                  <button className="text-on-surface-variant/20 hover:text-primary transition-colors">
-                    <ArrowUp className="h-6 w-6" />
-                  </button>
+                  <ArrowUp className="h-6 w-6 text-on-surface-variant/20" />
                   <span className="font-headline font-bold text-lg text-primary">{answer.upvotes}</span>
                 </div>
 
@@ -213,12 +230,8 @@ export default function QuestionDetailPage() {
                           {answer.author.name}
                           {answer.is_accepted && <CheckCircle className="h-4 w-4 text-green-500" />}
                         </div>
-                        <div className="text-[10px] text-on-surface-variant/40 font-bold">POSTED 2 HOURS AGO</div>
+                        <div className="text-[10px] text-on-surface-variant/40 font-bold uppercase">Posted {timeAgo(answer.created_at)}</div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-on-surface-variant/20">
-                      <Share2 className="h-5 w-5 hover:text-primary cursor-pointer transition-colors" />
-                      <MoreVertical className="h-5 w-5 hover:text-primary cursor-pointer transition-colors" />
                     </div>
                   </div>
 
@@ -226,31 +239,6 @@ export default function QuestionDetailPage() {
                     {answer.body}
                   </div>
 
-                  {/* Nested Comments */}
-                  {answer.comments.length > 0 && (
-                    <div className="mt-8 pt-8 border-t border-outline-variant/10 space-y-6">
-                      {answer.comments.map(comment => (
-                        <div key={comment.id} className="flex gap-4 pl-4 border-l-2 border-primary/20">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-bold text-primary uppercase">{comment.author.name}</span>
-                              <span className="text-[10px] text-on-surface-variant/40 font-bold">• 1 HOUR AGO</span>
-                            </div>
-                            <p className="text-sm text-on-surface-variant/80 font-body">{comment.body}</p>
-                          </div>
-                        </div>
-                      ))}
-                      <button className="text-xs font-bold text-on-surface-variant/40 hover:text-primary transition-colors pl-4">
-                        + Add a comment
-                      </button>
-                    </div>
-                  )}
-
-                  {answer.comments.length === 0 && (
-                     <button className="text-xs font-bold text-on-surface-variant/30 hover:text-primary transition-colors">
-                      + Add a comment
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

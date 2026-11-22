@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/adminSession";
 
 export async function proxy(req: NextRequest) {
   const res = NextResponse.next();
@@ -10,11 +11,11 @@ export async function proxy(req: NextRequest) {
   // -------------------------------------------------------------
   // 1. Admin Portal Protection (Cookie Gate)
   // -------------------------------------------------------------
-  const adminSession = req.cookies.get("admin_session")?.value;
+  const adminSession = await verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value);
   const isAdminProtectedRoute = pathname.startsWith("/admin/dashboard") || pathname.startsWith("/admin/upload");
   const isAdminLoginPage = pathname === "/admin/login";
 
-  // If visiting protected admin route without admin_session cookie -> redirect to /admin/login
+  // If visiting a protected admin route without a valid signed session -> redirect to /admin/login
   if (isAdminProtectedRoute && !adminSession) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
   }
@@ -57,7 +58,10 @@ export async function proxy(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const protectedRoutes = ["/dashboard", "/notes", "/authorities", "/templates", "/videos", "/assistant"];
+  const protectedRoutes = [
+    "/dashboard", "/notes", "/authorities", "/templates", "/videos", "/assistant",
+    "/coach", "/community", "/groups", "/insights", "/profile", "/contribute",
+  ];
   const isProtectedRoute = protectedRoutes.some((path) =>
     pathname.startsWith(path)
   );
@@ -87,6 +91,12 @@ export const config = {
     "/templates/:path*",
     "/videos/:path*",
     "/assistant/:path*",
+    "/coach/:path*",
+    "/community/:path*",
+    "/groups/:path*",
+    "/insights/:path*",
+    "/profile/:path*",
+    "/contribute/:path*",
     "/login",
     "/register",
   ],

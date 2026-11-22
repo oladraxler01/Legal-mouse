@@ -7,11 +7,11 @@ import {
   ArrowUp, 
   CheckCircle, 
   Plus,
-  Eye,
   ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { loadAuthors, timeAgo } from "@/lib/community";
 
 interface Topic {
   id: string;
@@ -30,69 +30,20 @@ interface Question {
   topic: Topic;
   upvotes: number;
   answer_count: number;
-  view_count: number;
   is_resolved: boolean;
   created_at: string;
 }
 
 const filterCategories = ["All Courses", "Contract", "Tort", "Criminal", "Constitutional"];
 
-const mockQuestions: Question[] = [
-  {
-    id: "q1",
-    title: "Can silence constitute acceptance in contract law?",
-    author: { name: "Sarah Chen", is_top_contributor: true, avatar_initial: "S" },
-    tags: ["Acceptance", "Contract Formation"],
-    topic: { id: "1", name: "Contract Law" },
-    upvotes: 42,
-    answer_count: 8,
-    view_count: 234,
-    is_resolved: true,
-    created_at: "2024-04-23T10:00:00Z"
-  },
-  {
-    id: "q2",
-    title: "How does the 'but for' test work in negligence?",
-    author: { name: "James Miller", is_top_contributor: false, avatar_initial: "J" },
-    tags: ["Negligence", "Causation"],
-    topic: { id: "2", name: "Tort Law" },
-    upvotes: 35,
-    answer_count: 12,
-    view_count: 189,
-    is_resolved: true,
-    created_at: "2024-04-22T15:30:00Z"
-  },
-  {
-    id: "q3",
-    title: "What's the difference between murder and voluntary manslaughter?",
-    author: { name: "Emma Wilson", is_top_contributor: true, avatar_initial: "E" },
-    tags: ["Homicide", "Mens Rea"],
-    topic: { id: "3", name: "Criminal Law" },
-    upvotes: 28,
-    answer_count: 6,
-    view_count: 156,
-    is_resolved: false,
-    created_at: "2024-04-21T09:15:00Z"
-  },
-  {
-    id: "q4",
-    title: "Explain the Wednesbury unreasonableness principle",
-    author: { name: "David Lee", is_top_contributor: false, avatar_initial: "D" },
-    tags: ["Judicial Review", "Public Law"],
-    topic: { id: "4", name: "Administrative Law" },
-    upvotes: 21,
-    answer_count: 4,
-    view_count: 98,
-    is_resolved: true,
-    created_at: "2024-04-20T11:45:00Z"
-  }
-];
+
 
 export default function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All Courses");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -100,39 +51,37 @@ export default function CommunityPage() {
       const supabase = createClient();
       
       const { data: dbQuestions, error } = await supabase
-        .from('questions')
-        .select(`
-          id,
-          title,
-          upvotes,
-          answer_count,
-          view_count,
-          is_resolved,
-          tags,
-          created_at,
-          topic:topics ( id, name )
-        `);
+        .from("questions")
+        .select("id, title, upvotes, answer_count, is_resolved, tags, created_at, author_id")
+        .order("created_at", { ascending: false });
 
-      if (error || !dbQuestions || dbQuestions.length === 0) {
-        setQuestions(mockQuestions);
+      if (error) {
+        console.error("Failed to load questions:", error);
+        setLoadError(true);
+        setQuestions([]);
       } else {
-        // Mocking author for now
-        const transformed = dbQuestions.map((q: { 
-          id: string; 
-          title: string; 
-          upvotes: number; 
-          answer_count: number; 
-          view_count: number; 
-          is_resolved: boolean; 
-          tags: string[]; 
-          created_at: string; 
-          topic: { id: string; name: string }[] 
-        }) => ({
-          ...q,
-          topic: q.topic[0] || { id: "0", name: "General" },
-          author: { name: "Community User", is_top_contributor: false, avatar_initial: "U" }
-        }));
-        setQuestions(transformed as Question[]);
+        const rows = (dbQuestions || []) as {
+          id: string; title: string; upvotes: number | null; answer_count: number | null;
+          is_resolved: boolean | null; tags: string[] | null; created_at: string; author_id: string | null;
+        }[];
+        const authorOf = await loadAuthors(supabase, rows.map((r) => r.author_id));
+        setQuestions(
+          rows.map((q) => {
+            const tags = q.tags || [];
+            const author = authorOf(q.author_id);
+            return {
+              id: q.id,
+              title: q.title,
+              upvotes: q.upvotes ?? 0,
+              answer_count: q.answer_count ?? 0,
+              is_resolved: !!q.is_resolved,
+              created_at: q.created_at,
+              tags: tags.slice(1),
+              topic: { id: tags[0] || "general", name: tags[0] || "General" },
+              author: { ...author, is_top_contributor: false },
+            };
+          })
+        );
       }
       setLoading(false);
     }
@@ -251,10 +200,7 @@ export default function CommunityPage() {
                   <MessageSquare className="h-3.5 w-3.5" />
                   {q.answer_count} answers
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Eye className="h-3.5 w-3.5" />
-                  {q.view_count} views
-                </div>
+                <span>{timeAgo(q.created_at)}</span>
               </div>
             </div>
             
@@ -265,9 +211,24 @@ export default function CommunityPage() {
           </Link>
         ))}
 
-        {filteredQuestions.length === 0 && !loading && (
+        {loading && (
+          <p className="text-center py-20 text-on-surface-variant/50 font-serif italic">Loading questions...</p>
+        )}
+
+        {!loading && filteredQuestions.length === 0 && (
           <div className="text-center py-20 bg-surface-container-lowest rounded-3xl border border-outline-variant/10">
-            <p className="text-on-surface-variant/50 font-serif italic text-lg">No questions found matching your search.</p>
+            <p className="text-on-surface-variant/60 font-serif italic text-lg mb-6">
+              {loadError
+                ? "We couldn't load questions right now. Please try again shortly."
+                : questions.length === 0
+                ? "No questions yet. Be the first to ask the community."
+                : "No questions found matching your search."}
+            </p>
+            {!loadError && (
+              <Link href="/community/ask" className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4" /> Ask a question
+              </Link>
+            )}
           </div>
         )}
       </div>
