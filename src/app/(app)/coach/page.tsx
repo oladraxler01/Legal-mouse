@@ -17,6 +17,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import ProcedureBriefing from "./ProcedureBriefing";
 
 /* ═══════════════════════════════════════════════════
    TypeScript Interfaces
@@ -209,6 +210,7 @@ function CoachPageContent() {
   const [opponentOptions, setOpponentOptions] = useState<OpponentOption[]>([]);
 
   const [isCaseInitialized, setIsCaseInitialized] = useState(false);
+  const [isBriefing, setIsBriefing] = useState(false);
   const [caseNature, setCaseNature] = useState<CaseNature | null>(null);
   const [intakeMethod, setIntakeMethod] = useState<'AI_SCENARIO' | 'CUSTOM_UPLOAD' | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
@@ -790,6 +792,21 @@ Extra Context: ${activeSimulationContext}
     );
   }
 
+  /* ── Procedure Briefing (between setup and courtroom) ── */
+  if (!isCaseInitialized && isBriefing && caseNature) {
+    return (
+      <ProcedureBriefing
+        nature={caseNature}
+        caseTitle={caseTitle}
+        onExit={() => setIsBriefing(false)}
+        onComplete={() => {
+          setIsBriefing(false);
+          setIsCaseInitialized(true);
+        }}
+      />
+    );
+  }
+
   /* ── Onboarding Wrapper ─────────────────────────── */
   if (!isCaseInitialized) {
     return (
@@ -919,7 +936,7 @@ Extra Context: ${activeSimulationContext}
                            setActiveWitnessText("Pending formal deposition entry...");
                          }
                       }
-                      setIsCaseInitialized(true);
+                      setIsBriefing(true);
                     }}
                     className="px-8 py-4 bg-primary text-on-primary font-black uppercase tracking-widest rounded-lg shadow-lg hover:bg-primary/90 transition-all flex items-center gap-3"
                   >
