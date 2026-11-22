@@ -97,7 +97,32 @@ const PREDEFINED_SCENARIOS = {
       chargeSheet: "Civil suit for environmental damages and statutory criminal negligence for unauthorized dumping of toxic waste in municipal waterways.",
       witnessStatement: 'EPA Inspector Log: "At 04:00 hours, we observed the facility actively bypassing the filtration unit and discharging raw toxic effluent directly into the river..."'
     }
+  ],
+  ARBITRATION: [
+    {
+      id: "arb_1",
+      title: "Zenon Logistics Ltd v. Atlas Petroleum Plc",
+      stage: "ARBITRAL HEARING",
+      chargeSheet: "Statement of Claim under Clause 18 (Arbitration Clause) of the 2024 Haulage Agreement. The Claimant seeks N480 million for unpaid freight invoices and damages for wrongful termination. The Respondent counterclaims for losses caused by late deliveries.",
+      witnessStatement: 'Witness Statement of the Claimant\'s Operations Manager: "Every delivery was signed for at the Respondent\'s depot. No complaint about lateness was ever raised until after we issued the final invoice."'
+    },
+    {
+      id: "arb_2",
+      title: "Halcyon Builders Ltd v. Lagoon Estates Ltd",
+      stage: "PRELIMINARY OBJECTION ON JURISDICTION",
+      chargeSheet: "The Respondent challenges the tribunal's jurisdiction, alleging that the arbitration clause in the construction contract was never signed. The Claimant asks the tribunal to rule that it is competent to hear the dispute over N1.2 billion in unpaid progress payments.",
+      witnessStatement: 'Affidavit of the Claimant\'s Managing Director: "Both parties performed the contract for 14 months and exchanged emails expressly referring any dispute to arbitration under Clause 22."'
+    }
   ]
+};
+
+type CaseNature = keyof typeof PREDEFINED_SCENARIOS;
+
+const CASE_NATURE_DESCRIPTIONS: Record<CaseNature, string> = {
+  CRIMINAL: "State v. Suspect - Statutory infractions, homicide, robbery.",
+  CIVIL: "Private disputes - Breach of contract, torts, injunctions.",
+  HYBRID: "Parallel actions - Tortious claims mixed with statutory negligence.",
+  ARBITRATION: "Private tribunal - Commercial disputes decided by an arbitral panel.",
 };
 
 const FALLBACK_CASE: CaseData = {
@@ -184,7 +209,7 @@ function CoachPageContent() {
   const [opponentOptions, setOpponentOptions] = useState<OpponentOption[]>([]);
 
   const [isCaseInitialized, setIsCaseInitialized] = useState(false);
-  const [caseNature, setCaseNature] = useState<'CRIMINAL' | 'CIVIL' | 'HYBRID' | null>(null);
+  const [caseNature, setCaseNature] = useState<CaseNature | null>(null);
   const [intakeMethod, setIntakeMethod] = useState<'AI_SCENARIO' | 'CUSTOM_UPLOAD' | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
 
@@ -525,7 +550,7 @@ Extra Context: ${activeSimulationContext}
               label: "Procedural Ruling",
               description: data.responseSpeech,
               timestamp: "Just now",
-              role: data.role || "Justice LegalMouse"
+              role: data.role || (caseNature === "ARBITRATION" ? "Arbitrator LegalMouse" : "Justice LegalMouse")
             }
           ]);
 
@@ -780,8 +805,8 @@ Extra Context: ${activeSimulationContext}
                 <span className="flex items-center justify-center w-5 h-5 rounded bg-primary/20 text-primary">A</span>
                 Nature of the Case
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(['CRIMINAL', 'CIVIL', 'HYBRID'] as const).map(nature => (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                {(Object.keys(CASE_NATURE_DESCRIPTIONS) as CaseNature[]).map(nature => (
                   <button
                     key={nature}
                     onClick={() => {
@@ -793,9 +818,7 @@ Extra Context: ${activeSimulationContext}
                   >
                     <h3 className="text-xl font-black text-on-surface mb-2 uppercase">{nature}</h3>
                     <p className="text-xs text-on-surface-variant">
-                      {nature === 'CRIMINAL' && 'State v. Suspect - Statutory infractions, homicide, robbery.'}
-                      {nature === 'CIVIL' && 'Private disputes - Breach of contract, torts, injunctions.'}
-                      {nature === 'HYBRID' && 'Parallel actions - Tortious claims mixed with statutory negligence.'}
+                      {CASE_NATURE_DESCRIPTIONS[nature]}
                     </p>
                   </button>
                 ))}
@@ -1155,9 +1178,11 @@ Extra Context: ${activeSimulationContext}
                 </div>
               </div>
               <h3 className="font-extrabold text-2xl text-on-surface mb-1">
-                Justice LegalMouse
+                {caseNature === "ARBITRATION" ? "Arbitrator LegalMouse" : "Justice LegalMouse"}
               </h3>
-              <p className="text-xs text-on-surface-variant mb-1">(Presiding AI Judge)</p>
+              <p className="text-xs text-on-surface-variant mb-1">
+                {caseNature === "ARBITRATION" ? "(Presiding AI Arbitrator)" : "(Presiding AI Judge)"}
+              </p>
               <p
                 className={`text-xs uppercase tracking-[0.2em] font-bold animate-pulse ${coachStateColor}`}
               >

@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       let personaTitle = "Defense Counsel";
       if (caseNature === 'CIVIL') personaTitle = "Plaintiff/Defense Counsel for Respondent";
       if (caseNature === 'HYBRID') personaTitle = "Specialized Counsel for Regulatory & Tort Defense";
+      if (caseNature === 'ARBITRATION') personaTitle = "Counsel for the Respondent (Arbitral Proceedings)";
 
       systemPrompt = `You are the AI Opposing Counsel (${personaTitle}) in a moot court competition, fighting against the user's arguments.
 Case context: ${JSON.stringify(documents)}.
@@ -47,12 +48,20 @@ Return a JSON object containing:
    - "description": The text of the specific 2-3 sentence counter-argument or cross-examination pushback.
 5. "role": "${personaTitle}"`;
     } else if (courtTurn === 'JUDICIAL_INTERLOCUTORY') {
-      systemPrompt = `You are Justice LegalMouse, the Presiding AI Judge in a moot court competition.
+      const isArbitration = caseNature === 'ARBITRATION';
+      const presidingTitle = isArbitration ? 'Arbitrator LegalMouse' : 'Justice LegalMouse';
+      systemPrompt = isArbitration
+        ? `You are Arbitrator LegalMouse, the Sole Arbitrator presiding over an arbitral tribunal in a moot arbitration exercise. Counsel address you as "the Tribunal" or "Learned Arbitrator", not "My Lord". Apply arbitral procedure: party autonomy, the arbitration agreement, the tribunal's competence to rule on its own jurisdiction, and fair hearing.
 Case context: ${JSON.stringify(documents)}.
+Nature of the Case: ARBITRATION`
+        : `You are Justice LegalMouse, the Presiding AI Judge in a moot court competition.
+Case context: ${JSON.stringify(documents)}.
+Nature of the Case: ${caseNature}`;
+      systemPrompt += `
 
 Your task is twofold:
 1. BACKGROUND COACH EVALUATION: Quietly evaluate the user's arguments for procedural issues (hearsay, leading questions). Deduct metrics accordingly.
-2. AUTHORITY RULING (Persona C): Act as the presiding judge. Evaluate the arguments presented by both parties and deliver an authoritative, brief (2-3 sentences) procedural decision or interlocutory ruling. Keep it professional, alert, and concise.
+2. AUTHORITY RULING (Persona C): Act as the presiding ${isArbitration ? 'arbitrator' : 'judge'}. Evaluate the arguments presented by both parties and deliver an authoritative, brief (2-3 sentences) procedural decision or interlocutory ruling. Keep it professional, alert, and concise.
 
 Return a JSON object containing:
 1. "warnings": An array of objects, each having:
@@ -63,8 +72,8 @@ Return a JSON object containing:
    - "timestamp": Relative time string like "Just now"
 2. "legalAccuracy": Integer score out of 100 based on their legal reasoning. Start at 90.
 3. "demeanorScore": Integer score out of 100 based on tone. Start at 85.
-4. "responseSpeech": The text of your brief presiding judge ruling.
-5. "role": "Justice LegalMouse"`;
+4. "responseSpeech": The text of your brief ${isArbitration ? 'arbitral' : 'presiding judge'} ruling.
+5. "role": "${presidingTitle}"`;
     } else {
       // Default: USER_ARGUMENT (Persona A - Live Coach)
       systemPrompt = `You are the AI Judge Coach in a moot court simulation.
