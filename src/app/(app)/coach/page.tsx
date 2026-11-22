@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import ProcedureBriefing from "./ProcedureBriefing";
+import { useVoice, type VoiceRole } from "@/lib/useVoice";
 
 /* ═══════════════════════════════════════════════════
    TypeScript Interfaces
@@ -407,26 +408,13 @@ function CoachPageContent() {
     }
   }, [isListening]);
 
-  const speakText = (text: string, onEnd: () => void) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      onEnd();
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => {
-      onEnd();
-    };
-    utterance.onerror = (e) => {
-      console.error("SpeechSynthesis error:", e);
-      onEnd();
-    };
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.lang.includes("en-US") || v.lang.includes("en-GB"));
-    if (voice) {
-      utterance.voice = voice;
-    }
-    window.speechSynthesis.speak(utterance);
+  /* ── Courtroom voices: counsel and the bench each have their own natural voice ── */
+  const courtVoice = useVoice();
+  const benchRole: VoiceRole = caseNature === "ARBITRATION" ? "arbitrator" : "judge";
+  const speakText = (text: string, onEnd: () => void, role: VoiceRole = "counsel") => {
+    courtVoice.speak(text, role).then((finished) => {
+      if (finished) onEnd();
+    });
   };
 
   const unlockInterface = useCallback(() => {
@@ -576,7 +564,7 @@ Extra Context: ${activeSimulationContext}
             clearInterval(animInterval);
             setScale(1);
             unlockInterface();
-          });
+          }, benchRole);
         } else {
           unlockInterface();
         }

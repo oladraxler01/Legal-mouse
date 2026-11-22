@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Quote, Volume2, VolumeX, X } from "lucide-react";
 import { PROCEDURES, COURT_EXPRESSIONS, type ProcedureNature } from "./procedures";
+import { useVoice } from "@/lib/useVoice";
 
 interface BriefingProps {
   nature: ProcedureNature;
@@ -89,20 +90,18 @@ export default function ProcedureBriefing({ nature, caseTitle, onComplete, onExi
     };
   }, [index, steps]);
 
-  /* ── Voice: the mouse reads each step aloud ─── */
+  /* ── Voice: the mouse reads each step aloud in a natural voice ─── */
+  const narrator = useVoice();
+  const { speak: narrate, stop: stopNarration } = narrator;
   useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    if (!soundOn) return;
+    if (!soundOn) {
+      stopNarration();
+      return;
+    }
     const s = steps[index];
-    const utterance = new SpeechSynthesisUtterance(`${s.title}. ${s.narration}`);
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find((v) => v.lang === "en-GB") || voices.find((v) => v.lang.startsWith("en"));
-    if (voice) utterance.voice = voice;
-    utterance.rate = 1.02;
-    window.speechSynthesis.speak(utterance);
-    return () => window.speechSynthesis.cancel();
-  }, [index, soundOn, steps]);
+    narrate(`${s.title}. ${s.narration}`, "narrator");
+    return () => stopNarration();
+  }, [index, soundOn, steps, narrate, stopNarration]);
 
   const finishTyping = useCallback(() => {
     if (typingTimer.current) clearInterval(typingTimer.current);
@@ -123,7 +122,7 @@ export default function ProcedureBriefing({ nature, caseTitle, onComplete, onExi
   const next = useCallback(() => {
     if (isTyping) return finishTyping();
     if (isLast) {
-      window.speechSynthesis?.cancel();
+      stopNarration();
       return onComplete();
     }
     goTo(index + 1);
@@ -141,7 +140,7 @@ export default function ProcedureBriefing({ nature, caseTitle, onComplete, onExi
   }, [next, goTo, index, showGlossary]);
 
   const skip = () => {
-    window.speechSynthesis?.cancel();
+    stopNarration();
     onComplete();
   };
 

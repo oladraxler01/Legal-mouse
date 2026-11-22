@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mic, MicOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useVoice } from "@/lib/useVoice";
 
 /* ── Voice State Machine ────────────────────────────────────── */
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
@@ -46,89 +47,46 @@ export default function LegalMouseAvatar() {
   const [statusText, setStatusText] = useState("Tap the mic to speak");
 
   const recognitionRef = useRef<any>(null);
-  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const speakingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const voice = useVoice();
+  const stopVoice = voice.stop;
 
   /* ── Cleanup on unmount ───────────────────────────────────── */
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort?.();
-      window.speechSynthesis?.cancel();
-      if (speakingPollRef.current) clearInterval(speakingPollRef.current);
+      stopVoice();
     };
-  }, []);
+  }, [stopVoice]);
 
   /* ── Stop speaking when drawer closes ─────────────────────── */
   useEffect(() => {
     if (!isOpen) {
       recognitionRef.current?.abort?.();
-      window.speechSynthesis?.cancel();
-      if (speakingPollRef.current) clearInterval(speakingPollRef.current);
+      stopVoice();
       setVoiceState("idle");
       setStatusText("Tap the mic to speak");
     }
-  }, [isOpen]);
+  }, [isOpen, stopVoice]);
 
-  /* ── Speak a reply using speechSynthesis ──────────────────── */
-  const speakReply = useCallback((rawText: string) => {
-    window.speechSynthesis.cancel();
+  /* ── Speak a reply in the mouse's natural voice ───────────── */
+  const speakReply = useCallback(
+    async (rawText: string) => {
+      // Strip markdown symbols so they are never spoken aloud
+      const text = rawText
+        .replace(/[*#_~`>]/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/\n{2,}/g, ". ")
+        .replace(/\n/g, " ")
+        .trim();
 
-    // Strip markdown symbols so they are never spoken aloud
-    const text = rawText
-      .replace(/[*#_~`>]/g, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/\n{2,}/g, ". ")
-      .replace(/\n/g, " ")
-      .trim();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05;
-    utterance.lang = "en-US";
-
-    // Prioritize premium, natural-sounding English voices
-    const voices = window.speechSynthesis.getVoices();
-    const voicePriority = [
-      "Google US English",
-      "Google UK English Female",
-      "Microsoft Aria Online (Natural)",
-      "Microsoft Jenny Online (Natural)",
-      "Samantha",
-      "Natural",
-      "Premium",
-    ];
-    let selectedVoice: SpeechSynthesisVoice | undefined;
-    for (const name of voicePriority) {
-      selectedVoice = voices.find((v) => v.name.includes(name) && v.lang.startsWith("en"));
-      if (selectedVoice) break;
-    }
-    // Fallback: pick any English voice
-    if (!selectedVoice) {
-      selectedVoice = voices.find((v) => v.lang.startsWith("en"));
-    }
-    if (selectedVoice) utterance.voice = selectedVoice;
-
-    synthRef.current = utterance;
-
-    utterance.onstart = () => {
       setVoiceState("speaking");
-      setStatusText("Speaking...");
-    };
-
-    utterance.onend = () => {
-      setVoiceState("idle");
-      setStatusText("Tap the mic to speak");
-      synthRef.current = null;
-    };
-
-    utterance.onerror = () => {
-      setVoiceState("idle");
-      setStatusText("Tap the mic to speak");
-      synthRef.current = null;
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, []);
+      setStatusText("Speaking... tap the mic to interrupt");
+      await voice.speak(text, "mouse");
+      setVoiceState((state) => (state === "speaking" ? "idle" : state));
+      setStatusText((t) => (t.startsWith("Speaking") ? "Tap the mic to speak" : t));
+    },
+    [voice]
+  );
 
   /* ── Send transcript to backend ───────────────────────────── */
   const sendToBackend = useCallback(
@@ -154,6 +112,10 @@ export default function LegalMouseAvatar() {
           body: JSON.stringify({ transcript }),
         });
 
+        if (res.status === 401) {
+          speakReply("Please log in again so I can help you.");
+          return;
+        }
         if (!res.ok) throw new Error("API error");
 
         const data = await res.json();
@@ -168,7 +130,7 @@ export default function LegalMouseAvatar() {
   /* ── Start listening ──────────────────────────────────────── */
   const startListening = useCallback(() => {
     // Cancel any ongoing speech first
-    window.speechSynthesis.cancel();
+    stopVoice();
 
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -219,7 +181,7 @@ export default function LegalMouseAvatar() {
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [sendToBackend, voiceState]);
+  }, [sendToBackend, voiceState, stopVoice]);
 
   /* ── Toggle mic ───────────────────────────────────────────── */
   const toggleMic = useCallback(() => {
@@ -227,10 +189,11 @@ export default function LegalMouseAvatar() {
       recognitionRef.current?.stop();
       setVoiceState("idle");
       setStatusText("Tap the mic to speak");
-    } else if (voiceState === "idle") {
+    } else if (voiceState === "idle" || voiceState === "speaking") {
+      // Tapping while the mouse is talking interrupts it, like a real conversation.
       startListening();
     }
-    // If processing or speaking, ignore taps
+    // While processing, ignore taps
   }, [voiceState, startListening]);
 
   /* ── Avatar animation class based on voice state ──────────── */
@@ -381,7 +344,7 @@ export default function LegalMouseAvatar() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.92 }}
                 onClick={toggleMic}
-                disabled={voiceState === "processing" || voiceState === "speaking"}
+                disabled={voiceState === "processing"}
                 className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg ${
                   voiceState === "listening"
                     ? "bg-red-500 text-white shadow-red-500/30"
