@@ -19,6 +19,9 @@ import {
   MessageSquare
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import { loadActiveDays, loadRecentActivity, type ActivityItem } from "@/lib/activity";
+import { timeAgo } from "@/lib/community";
+import Link from "next/link";
 
 interface Profile {
   id: string;
@@ -26,6 +29,7 @@ interface Profile {
   role: string;
   year_of_study: string;
   current_streak: number;
+  longest_streak: number;
   contributions: number;
   reputation: number;
   questions_asked: number;
@@ -51,6 +55,7 @@ interface DbProfile {
   role: string | null;
   year_of_study: string | null;
   current_streak: number | null;
+  longest_streak?: number | null;
   notes_read: number | null;
   cases_reviewed: number | null;
   contributions?: number | null;
@@ -66,6 +71,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
   const [userEmail, setUserEmail] = useState("");
+  const [recent, setRecent] = useState<ActivityItem[]>([]);
+  const [activeDays, setActiveDays] = useState<Set<string>>(new Set());
+  const [week, setWeek] = useState<{ key: string; label: string }[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -92,7 +101,7 @@ export default function ProfilePage() {
           // Fetch Profile 
           const { data, error: profileError } = await supabase
             .from("profiles")
-            .select("id, full_name, role, year_of_study, current_streak, notes_read, cases_reviewed")
+            .select("*")
             .eq("id", user.id)
             .single();
 
@@ -113,6 +122,7 @@ export default function ProfilePage() {
                 role: "Law Student",
                 year_of_study: "Year 1",
                 current_streak: 0,
+                longest_streak: 0,
                 contributions: 0,
                 reputation: 0,
                 questions_asked: 0,
@@ -134,6 +144,7 @@ export default function ProfilePage() {
               role: profileData.role || "Law Student",
               year_of_study: profileData.year_of_study || "Year 2",
               current_streak: profileData.current_streak || 0,
+              longest_streak: Math.max(profileData.longest_streak || 0, profileData.current_streak || 0),
               notes_read: profileData.notes_read || 0,
               cases_reviewed: profileData.cases_reviewed || 0,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -151,6 +162,17 @@ export default function ProfilePage() {
               year_of_study: profileData.year_of_study || "Year 2"
             });
           }
+
+          // Recent activity and the last 7 days
+          loadRecentActivity(8).then(setRecent);
+          loadActiveDays(7).then(setActiveDays);
+          const now = Date.now();
+          setWeek(
+            Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(now - (6 - i) * 86400000);
+              return { key: d.toLocaleDateString("en-CA"), label: d.toLocaleDateString(undefined, { weekday: "short" }) };
+            })
+          );
 
           // Fetch Saved Resources
           const { data: saved, error: savedError } = await supabase
@@ -179,21 +201,20 @@ export default function ProfilePage() {
       try {
         const { error } = await supabase
           .from("profiles")
+          // Only the editable fields: counters and streaks are kept up to date by the database.
           .upsert({
             id: user.id,
-            full_name: formData.full_name,
+            full_name: formData.full_name.trim(),
             role: formData.role,
             year_of_study: formData.year_of_study,
-            // Keep existing values or default to 0 for new records
-            current_streak: profile?.current_streak || 0,
-            notes_read: profile?.notes_read || 0,
-            cases_reviewed: profile?.cases_reviewed || 0
-          })
-          .eq("id", user.id);
+          });
 
         if (error) {
           console.error("Profile save error detail:", JSON.stringify(error, null, 2));
+          setNotice("Your changes couldn't be saved. Please try again.");
         } else {
+          setNotice("Profile updated.");
+          await supabase.auth.updateUser({ data: { full_name: formData.full_name.trim() } });
           if (profile) {
             setProfile({
               ...profile,
@@ -227,10 +248,24 @@ export default function ProfilePage() {
       {/* Header */}
       <header className="flex justify-between items-center mb-10">
         <h1 className="font-headline text-4xl font-bold tracking-tight text-on-surface">Profile</h1>
-        <button className="p-3 bg-surface-container-low rounded-xl text-on-surface-variant/40 hover:text-primary transition-colors border border-outline-variant/10">
-          <Settings className="h-6 w-6" />
+        <button
+          onClick={async () => {
+            const { error } = await createClient().auth.resetPasswordForEmail(userEmail, {
+              redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+            });
+            setNotice(error ? "Couldn't send the email. Please try again shortly." : `We've emailed a link to change your password to ${userEmail}.`);
+          }}
+          title="Change password"
+          className="flex items-center gap-2 px-4 py-3 bg-surface-container-low rounded-xl text-on-surface-variant hover:text-primary transition-colors border border-outline-variant/10 text-sm font-bold"
+        >
+          <Settings className="h-5 w-5" /> <span className="hidden sm:inline">Change password</span>
         </button>
       </header>
+      {notice && (
+        <button onClick={() => setNotice(null)} className="w-full mb-6 text-left rounded-xl bg-primary/10 text-primary px-4 py-3 text-sm font-medium">
+          {notice} <span className="opacity-60">(dismiss)</span>
+        </button>
+      )}
 
       {/* User Identity Card */}
       <section className="mb-12 relative">
@@ -319,11 +354,39 @@ export default function ProfilePage() {
 
       {/* Dashboard Stats Grid */}
       <section className="mb-16">
-        <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">Performance Stats</h3>
+        <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">Study Streak</h3>
+        <div className="grid md:grid-cols-[1fr_2fr] gap-6 mb-12">
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2rem] p-8 flex items-center gap-5">
+            <Flame className="h-12 w-12 text-orange-500 fill-orange-500 shrink-0" />
+            <div>
+              <div className="font-headline text-4xl font-extrabold text-orange-500">{profile.current_streak} {profile.current_streak === 1 ? "day" : "days"}</div>
+              <div className="text-sm text-on-surface-variant">Current streak · Best: {profile.longest_streak} {profile.longest_streak === 1 ? "day" : "days"}</div>
+            </div>
+          </div>
+          <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-[2rem] p-8">
+            <div className="text-sm font-bold text-on-surface mb-4">Last 7 days</div>
+            <div className="grid grid-cols-7 gap-2">
+              {week.map(({ key, label }) => {
+                const active = activeDays.has(key);
+                return (
+                  <div key={key} className="flex flex-col items-center gap-2">
+                    <div className={`w-full aspect-square max-w-12 rounded-xl flex items-center justify-center ${active ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface-variant/40"}`}>
+                      {active ? <Check className="h-4 w-4" /> : null}
+                    </div>
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-on-surface-variant mt-4">Open any note, case, video or moot court hearing each day to keep your streak going.</p>
+          </div>
+        </div>
+
+        <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">How You Use Legal Mouse</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: "Contributions", value: profile.contributions, icon: Star },
-            { label: "Reputation", value: profile.reputation, icon: Award },
+            { label: "Notes Read", value: profile.notes_read, icon: Book },
+            { label: "Cases & Moot Sessions", value: profile.cases_reviewed, icon: Scale },
             { label: "Questions Asked", value: profile.questions_asked, icon: MessageSquare },
             { label: "Answers Given", value: profile.answers_given, icon: CheckCircle },
           ].map((stat) => (
@@ -340,10 +403,10 @@ export default function ProfilePage() {
         <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">Achievements</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { id: 'v', label: "Verified Contributor", icon: CheckCircle, active: true },
-            { id: 'a', label: "Top Answerer", icon: Star, active: false },
-            { id: 's', label: "Study Streak", icon: Flame, active: true, value: `${profile.current_streak} Days` },
-            { id: 'm', label: "Case Master", icon: Book, active: false },
+            { id: 'v', label: "Contributor", icon: Award, active: profile.contributions > 0, value: profile.contributions > 0 ? `${profile.contributions} shared` : "Share a note" },
+            { id: 'a', label: "Top Answerer", icon: Star, active: profile.answers_given >= 5, value: `${profile.answers_given} / 5 answers` },
+            { id: 's', label: "7-Day Streak", icon: Flame, active: profile.longest_streak >= 7, value: `Best ${profile.longest_streak} / 7 days` },
+            { id: 'm', label: "Case Master", icon: Scale, active: profile.cases_reviewed >= 10, value: `${profile.cases_reviewed} / 10 cases` },
           ].map((achievement) => (
             <div 
               key={achievement.id} 
@@ -391,32 +454,36 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* Activity Overview (Progress Bars) */}
+      {/* Recent Activity */}
       <section>
-        <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-10">Activity Overview</h3>
-        <div className="space-y-12 bg-surface-container-lowest border border-outline-variant/10 p-10 rounded-[2.5rem]">
-          {[
-            { label: "Notes Read", value: profile.notes_read, total: 100 },
-            { label: "Cases Reviewed", value: profile.cases_reviewed, total: 50 },
-            { label: "Community Engagement", value: profile.contributions, total: 20 },
-          ].map((item) => {
-            const percentage = Math.min(Math.round((item.value / item.total) * 100), 100);
-            return (
-              <div key={item.label} className="relative">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="font-headline font-bold text-lg text-on-surface">{item.label}</span>
-                  <span className="font-label font-bold text-primary">{percentage}%</span>
+        <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">Recent Activity</h3>
+        {recent.length === 0 ? (
+          <div className="bg-surface-container-lowest border border-outline-variant/10 border-dashed p-10 rounded-[2rem] text-center">
+            <p className="text-on-surface-variant/60 font-serif italic">What you read and practise will show up here.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recent.map((item) => (
+              <Link
+                key={item.item_key}
+                href={item.href || "/dashboard"}
+                className="flex items-center gap-4 bg-surface-container-lowest border border-outline-variant/10 p-5 rounded-2xl hover:bg-surface-container-low transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <BookMarked className="h-5 w-5" />
                 </div>
-                <div className="h-3 w-full bg-surface-container-low rounded-full overflow-hidden border border-outline-variant/5">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-primary-container transition-all duration-1000 shadow-lg shadow-primary/20"
-                    style={{ width: `${percentage}%` }}
-                  />
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-on-surface truncate">{item.title}</div>
+                  <div className="text-xs text-on-surface-variant truncate">
+                    {item.subtitle ? `${item.subtitle} · ` : ""}
+                    {timeAgo(item.created_at)}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                <ArrowRight className="h-5 w-5 text-on-surface-variant/30" />
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { NOTE_FOLDERS } from "@/lib/noteFolders";
+import ContributionsReview from "./ContributionsReview";
 import { 
   universalUploadAction, 
   postAnnouncementAction, 
@@ -41,7 +42,7 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ initialAnnouncements = [] }: DashboardClientProps) {
-  const [activeTab, setActiveTab] = useState<"uploader" | "announcements">("uploader");
+  const [activeTab, setActiveTab] = useState<"uploader" | "announcements" | "contributions">("uploader");
 
   // -------------------------------------------------------------
   // Universal Uploader State
@@ -190,7 +191,7 @@ export default function DashboardClient({ initialAnnouncements = [] }: Dashboard
       </header>
 
       {/* Main Tabs Navigation */}
-      <div className="flex items-center gap-3 mb-10 border-b border-outline-variant/10 pb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-10 border-b border-outline-variant/10 pb-4">
         <button
           onClick={() => setActiveTab("uploader")}
           className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-label text-sm font-bold transition-all cursor-pointer ${
@@ -213,7 +214,20 @@ export default function DashboardClient({ initialAnnouncements = [] }: Dashboard
           <Megaphone className="w-4 h-4" />
           Announcements
         </button>
+        <button
+          onClick={() => setActiveTab("contributions")}
+          className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-label text-sm font-bold transition-all cursor-pointer ${
+            activeTab === "contributions"
+              ? "bg-primary text-on-primary shadow-lg shadow-primary/25"
+              : "bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
+          }`}
+        >
+          <FolderOpen className="w-4 h-4" />
+          Student Contributions
+        </button>
       </div>
+
+      {activeTab === "contributions" && <ContributionsReview />}
 
       {/* ═════════════════════════════════════════════════════════════════
           TAB 1: UNIVERSAL UPLOADER

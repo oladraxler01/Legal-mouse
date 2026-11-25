@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { loadAuthors, timeAgo, type AuthorInfo } from "@/lib/community";
+import { recordActivity } from "@/lib/activity";
 
 interface Answer {
   id: string;
@@ -58,6 +59,7 @@ export default function QuestionDetailPage() {
     const answerRows = (rows || []) as { id: string; body: string; upvotes: number | null; is_accepted: boolean | null; created_at: string; author_id: string | null }[];
     const authorOf = await loadAuthors(supabase, [q.author_id, ...answerRows.map((a) => a.author_id)]);
     const tags: string[] = q.tags || [];
+    recordActivity({ kind: "question", title: q.title, subtitle: `Community · ${tags[0] || "General"}`, href: `/community/${q.id}`, itemKey: `question:${q.id}` });
     setQuestion({
       id: q.id,
       title: q.title,

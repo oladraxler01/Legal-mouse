@@ -19,6 +19,7 @@ import {
 import { createClient } from "@/lib/supabase";
 import ProcedureBriefing from "./ProcedureBriefing";
 import { useVoice, type VoiceRole } from "@/lib/useVoice";
+import { recordActivity } from "@/lib/activity";
 
 /* ═══════════════════════════════════════════════════
    TypeScript Interfaces
@@ -802,6 +803,13 @@ Extra Context: ${activeSimulationContext}
         onComplete={() => {
           setIsBriefing(false);
           setIsCaseInitialized(true);
+          recordActivity({
+            kind: "coach",
+            title: caseTitle,
+            subtitle: `Moot court · ${caseNature.charAt(0) + caseNature.slice(1).toLowerCase()}`,
+            href: "/coach",
+            itemKey: `coach:${caseTitle}`,
+          });
         }}
       />
     );

@@ -2,16 +2,39 @@
 
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, Quote, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const params = useSearchParams();
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(
+    params.get("link") === "expired" ? "That verification link has expired or was already used. Sign in, or request a new link below." : null
+  );
+
+  const resendVerification = async () => {
+    if (!unverifiedEmail) return;
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: unverifiedEmail,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+    });
+    setInfo(resendError ? "Couldn't resend right now. Please wait a minute and try again." : `A new verification link has been sent to ${unverifiedEmail}.`);
+  };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,7 +51,15 @@ export default function LoginPage() {
     });
 
     if (loginError) {
-      setError(loginError.message);
+      const notConfirmed = loginError.message.toLowerCase().includes("not confirmed");
+      setUnverifiedEmail(notConfirmed ? email : null);
+      setError(
+        notConfirmed
+          ? "Please verify your email first. Check your inbox for the link we sent when you signed up."
+          : loginError.message === "Invalid login credentials"
+          ? "Incorrect email or password."
+          : loginError.message
+      );
       setIsLoading(false);
     } else {
       // Return to the page that required login, if it is a safe in-app path.
@@ -62,9 +93,17 @@ export default function LoginPage() {
 
           {/* Form */}
           <form className="space-y-6" onSubmit={handleLogin}>
+            {info && (
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl text-primary text-sm font-body">{info}</div>
+            )}
             {error && (
-              <div className="p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm font-body">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm font-body">
                 {error}
+                {unverifiedEmail && (
+                  <button type="button" onClick={resendVerification} className="block mt-2 font-bold underline">
+                    Resend verification email
+                  </button>
+                )}
               </div>
             )}
             {/* Email Field */}

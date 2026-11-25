@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { timeAgo } from "@/lib/community";
+import { recordActivity } from "@/lib/activity";
 
 interface Message {
   id: string;
@@ -146,6 +147,7 @@ export default function GroupChatPage() {
     );
     setMaterials((materialRows || []) as Material[]);
     setAccess("member");
+    recordActivity({ kind: "group", title: g.name, subtitle: "Study group", href: `/groups/${groupId}`, itemKey: `group:${groupId}` });
     scrollToBottom();
   }, [groupId, router]);
 

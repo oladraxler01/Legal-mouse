@@ -18,6 +18,8 @@ export interface NavLink {
   label: string;
   shortLabel?: string;
   icon: LucideIcon;
+  /** Where it sits in the desktop sidebar: main list (default), the "More" dropdown, or the account card. */
+  section?: "more" | "account";
 }
 
 /** Every feature in the app. The desktop sidebar and the mobile menu both use this list. */
@@ -29,11 +31,11 @@ export const NAV_LINKS: NavLink[] = [
   { href: "/videos", label: "Video Vault", shortLabel: "Videos", icon: PlaySquare },
   { href: "/coach", label: "Moot Court Coach", shortLabel: "Coach", icon: Gavel },
   { href: "/community", label: "Community", icon: Users },
-  { href: "/groups", label: "Study Groups", shortLabel: "Groups", icon: UsersRound },
+  { href: "/groups", label: "Study Groups", shortLabel: "Groups", icon: UsersRound, section: "more" },
   { href: "/templates", label: "Templates", icon: FileText },
-  { href: "/insights", label: "Legal Insights", shortLabel: "Insights", icon: Lightbulb },
-  { href: "/contribute", label: "Contribute", icon: Upload },
-  { href: "/profile", label: "Profile", icon: UserCircle },
+  { href: "/insights", label: "Legal Insights", shortLabel: "Insights", icon: Lightbulb, section: "more" },
+  { href: "/contribute", label: "Contribute", icon: Upload, section: "more" },
+  { href: "/profile", label: "Profile", icon: UserCircle, section: "account" },
 ];
 
 /** The four shortcuts on the mobile bottom bar (the fifth slot is "More"). */

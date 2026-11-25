@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { recordActivity } from "@/lib/activity";
 
 interface VideoAnimation {
   id: string;
@@ -142,6 +143,20 @@ export default function VideoGallery() {
 
     fetchVideos();
   }, []);
+
+  // Record opened videos for "Continue learning".
+  useEffect(() => {
+    if (!selectedVideo) return;
+    recordActivity({
+      kind: "video",
+      title: selectedVideo.title,
+      subtitle: selectedVideo.course_name,
+      href: selectedVideo.youtube_id
+        ? `/videos?yt=${selectedVideo.youtube_id}&title=${encodeURIComponent(selectedVideo.title)}`
+        : "/videos",
+      itemKey: `video:${selectedVideo.youtube_id || selectedVideo.id}`,
+    });
+  }, [selectedVideo]);
 
   // Handle auto-playing specific topics via query params (contextual linking)
   useEffect(() => {

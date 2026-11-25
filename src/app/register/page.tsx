@@ -23,19 +23,28 @@ export default function RegisterPage() {
     const password = formData.get("password") as string;
     const fullName = formData.get("fullName") as string;
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
+        // The verification email brings them back here, signed in.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
       },
     });
 
     if (signUpError) {
       setError(signUpError.message);
       setIsLoading(false);
+    } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+      // Supabase returns no identities when the email is already registered.
+      setError("An account with this email already exists. Sign in instead, or use Forgot Password.");
+      setIsLoading(false);
+    } else if (data.session) {
+      // Email verification is switched off in Supabase: they are signed in straight away.
+      window.location.href = "/dashboard";
     } else {
       setIsSuccess(true);
       setIsLoading(false);
@@ -120,7 +129,7 @@ export default function RegisterPage() {
           ) : (
             <form className="space-y-8" onSubmit={handleSignUp}>
               {error && (
-                <div className="p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm font-body">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm font-body">
                   {error}
                 </div>
               )}

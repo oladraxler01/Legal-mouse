@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { NOTE_FOLDERS } from "@/lib/noteFolders";
 
 interface Submission {
   id: string;
@@ -33,6 +34,8 @@ export default function ContributePage() {
   const [uploading, setUploading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userReputation, setUserReputation] = useState(0);
+  const [folder, setFolder] = useState(NOTE_FOLDERS[0].slug);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const router = useRouter();
@@ -58,7 +61,7 @@ export default function ContributePage() {
         {
           event: '*',
           schema: 'public',
-          table: 'notes',
+          table: 'contributions',
         },
         () => {
           if (currentUserId) fetchUserSubmissions(currentUserId);
@@ -74,13 +77,23 @@ export default function ContributePage() {
   async function fetchUserSubmissions(userId: string) {
     setLoading(true);
     const { data, error } = await supabase
-      .from('notes')
-      .select('id, title, contribution_type, status, created_at, file_url')
+      .from('contributions')
+      .select('id, title, status, created_at, file_url')
       .eq('author_id', userId)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setSubmissions(data as Submission[]);
+      const label = { pending: 'Under Review', approved: 'Approved', rejected: 'Needs Revision' } as const;
+      setSubmissions(
+        (data as { id: string; title: string; status: keyof typeof label; created_at: string; file_url: string }[]).map((c) => ({
+          id: c.id,
+          title: c.title,
+          contribution_type: 'Note',
+          status: label[c.status] || 'Under Review',
+          created_at: c.created_at,
+          file_url: c.file_url,
+        }))
+      );
     }
     setLoading(false);
   }
@@ -105,13 +118,17 @@ export default function ContributePage() {
     const allowedTypes = ['.pdf', '.docx', '.doc'];
     const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     if (!allowedTypes.includes(extension)) {
-      alert("Invalid file type. Please upload a PDF or Word document.");
+      setNotice({ ok: false, text: "Please upload a PDF or Word document (.pdf, .doc, .docx)." });
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      setNotice({ ok: false, text: "Files must be 25 MB or smaller." });
       return;
     }
 
     setUploading(true);
     try {
-      const fileName = `${currentUserId}/${Date.now()}_${file.name}`;
+      const fileName = `${currentUserId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { data: storageData, error: storageError } = await supabase.storage
         .from('contributions')
         .upload(fileName, file);
@@ -123,22 +140,22 @@ export default function ContributePage() {
         .getPublicUrl(fileName);
 
       const { error: dbError } = await supabase
-        .from('notes')
+        .from('contributions')
         .insert({
           title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title without extension
           author_id: currentUserId,
+          folder,
           file_url: publicUrl,
-          status: 'Under Review',
-          contribution_type: 'Note'
+          file_path: fileName,
         });
 
       if (dbError) throw dbError;
 
-      alert("Note uploaded successfully! Our team will review it shortly.");
+      setNotice({ ok: true, text: "Uploaded! The Legal Mouse team will review it, and once approved it appears in Summary Notes." });
       fetchUserSubmissions(currentUserId);
     } catch (error: any) {
       console.error("Error uploading note:", error);
-      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+      setNotice({ ok: false, text: "The upload didn't go through. Please try again." });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -177,6 +194,28 @@ export default function ContributePage() {
         <p className="font-body text-on-surface-variant text-lg opacity-70">Share your knowledge with the community</p>
       </header>
 
+      {/* Course picker for uploads */}
+      <label className="block mb-6 max-w-md">
+        <span className="text-sm font-bold text-on-surface">Which course is your note for?</span>
+        <select
+          value={folder}
+          onChange={(e) => setFolder(e.target.value)}
+          className="mt-2 w-full bg-surface-container-low border border-outline-variant/20 rounded-xl py-3 px-4 text-on-surface outline-none focus:border-primary/50"
+        >
+          {NOTE_FOLDERS.map((f) => (
+            <option key={f.slug} value={f.slug}>{f.name}</option>
+          ))}
+        </select>
+      </label>
+      {notice && (
+        <button
+          onClick={() => setNotice(null)}
+          className={`w-full mb-6 text-left rounded-xl px-4 py-3 text-sm font-medium ${notice.ok ? "bg-green-500/10 text-green-700 dark:text-green-300" : "bg-red-500/10 text-red-600 dark:text-red-400"}`}
+        >
+          {notice.text} <span className="opacity-60">(dismiss)</span>
+        </button>
+      )}
+
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Upload Notes */}
@@ -208,8 +247,8 @@ export default function ContributePage() {
         </button>
 
         {/* Case Brief */}
-        <Link 
-          href="/contribute/case-brief"
+        <div
+          aria-disabled="true"
           className="relative group overflow-hidden bg-surface-container-high border border-outline-variant/10 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all hover:border-primary/30 hover:bg-surface-container-highest shadow-sm"
         >
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 border border-primary/5 transition-transform group-hover:scale-110">
@@ -217,7 +256,8 @@ export default function ContributePage() {
           </div>
           <h3 className="font-headline text-2xl font-bold text-on-surface mb-2">Case Brief</h3>
           <p className="text-on-surface-variant/60 text-sm font-body">Summarize a case in detail</p>
-        </Link>
+          <span className="mt-3 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">Coming soon</span>
+        </div>
       </div>
 
       {/* Guidelines */}

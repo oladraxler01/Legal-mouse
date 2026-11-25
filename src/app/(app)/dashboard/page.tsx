@@ -11,8 +11,9 @@ import {
   Upload,
   Search,
   BookMarked,
-  Flame
 } from "lucide-react";
+import ContinueLearning from "@/components/ContinueLearning";
+import { StreakBadge } from "@/components/StreakTracker";
 
 async function getDashboardData() {
   const cookieStore = await cookies();
@@ -72,17 +73,12 @@ export default async function DashboardPage() {
   const quickAccess = [
     { title: "AI Assistant", icon: MessageSquare, href: "/assistant" },
     { title: "Smart Notes", icon: FileText, href: "/notes" },
-    { title: "Case Law", icon: Scale, href: "/cases" },
+    { title: "Case Law", icon: Scale, href: "/authorities/cases" },
     { title: "Study Groups", icon: Users, href: "/groups" },
     { title: "Q&A Forum", icon: HelpCircle, href: "/community" },
     { title: "Contribute", icon: Upload, href: "/contribute" },
   ];
 
-  const learningProgress = [
-    { title: "Contract Law", progress: 75 },
-    { title: "Criminal Law", progress: 60 },
-    { title: "Constitutional Law", progress: 45 },
-  ];
 
   return (
     <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 pb-32 md:pb-12 transition-colors duration-300">
@@ -92,12 +88,7 @@ export default async function DashboardPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight mb-1 text-on-surface">Legal Mouse</h1>
           <div className="flex items-center gap-3">
             <p className="font-body text-on-surface-variant/70 text-sm">Welcome back, {user.name}</p>
-            {user.streak >= 0 && (
-              <div className="flex items-center gap-1.5 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20 group animate-pulse hover:animate-none transition-all">
-                <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500" />
-                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tight">{user.streak} Day Streak</span>
-              </div>
-            )}
+            <StreakBadge initial={user.streak} />
           </div>
         </div>
         <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center font-bold text-lg text-on-primary shadow-lg shadow-primary/20">
@@ -166,22 +157,7 @@ export default async function DashboardPage() {
       {/* Continue Learning */}
       <section>
         <h3 className="font-label text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/50 mb-8">Continue Learning</h3>
-        <div className="space-y-10">
-          {learningProgress.map((subject) => (
-            <div key={subject.title}>
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-headline text-lg font-bold text-on-surface">{subject.title}</span>
-                <span className="font-label text-sm font-bold text-on-surface-variant/40">{subject.progress}%</span>
-              </div>
-              <div className="h-2 w-full bg-surface-container-low rounded-full overflow-hidden border border-outline-variant/10">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary to-primary-container transition-all duration-1000"
-                  style={{ width: `${subject.progress}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <ContinueLearning />
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import LegalMouseAvatar from "@/components/assistant/LegalMouseAvatar";
+import StreakTracker from "@/components/StreakTracker";
 
 export default function AppLayout({
   children,
@@ -15,6 +16,7 @@ export default function AppLayout({
       </main>
       <BottomNav />
       <LegalMouseAvatar />
+      <StreakTracker />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import React, { useEffect } from "react";
 import { X, ExternalLink, Scale, Book, FileText, Download } from "lucide-react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+import { recordActivity, type ActivityKind } from "@/lib/activity";
 
 interface DocumentViewerModalProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface DocumentViewerModalProps {
   title: string;
   fileUrl: string;
   resourceType?: "Scale" | "Book" | "FileText" | "default";
+  /** What kind of item this is, for activity tracking. Defaults to a guess from the current page. */
+  activity?: { kind: ActivityKind; subtitle?: string | null };
 }
 
 export default function DocumentViewerModal({
@@ -17,8 +21,27 @@ export default function DocumentViewerModal({
   onClose,
   title,
   fileUrl,
-  resourceType = "default"
+  resourceType = "default",
+  activity,
 }: DocumentViewerModalProps) {
+  // Record what was opened, for "Continue learning", streaks and profile stats.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!isOpen || !fileUrl) return;
+    const kind: ActivityKind = activity?.kind ?? (pathname.startsWith("/notes")
+      ? "note"
+      : pathname.startsWith("/authorities/cases")
+      ? "case"
+      : pathname.startsWith("/authorities/blacks-law")
+      ? "dictionary"
+      : pathname.startsWith("/authorities")
+      ? "statute"
+      : "template");
+    const section = { note: "Summary Notes", case: "Case law", dictionary: "Black's Law Dictionary", statute: "Statutes", template: "Templates" }[kind as string];
+    recordActivity({ kind, title, subtitle: activity?.subtitle ?? section, href: activity ? undefined : pathname, fileUrl, itemKey: fileUrl });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, fileUrl, title, pathname]);
+
   // Stop the page behind the viewer from scrolling while it is open.
   useEffect(() => {
     if (!isOpen) return;
