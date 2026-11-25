@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { 
   Upload, 
   FileText, 
+  FolderOpen,
   Scale, 
   Video, 
   Megaphone, 
@@ -19,6 +20,7 @@ import {
   Eye
 } from "lucide-react";
 import Link from "next/link";
+import { NOTE_FOLDERS } from "@/lib/noteFolders";
 import { 
   universalUploadAction, 
   postAnnouncementAction, 
@@ -251,10 +253,11 @@ export default function DashboardClient({ initialAnnouncements = [] }: Dashboard
               <label className="block font-label text-xs uppercase tracking-wider font-bold text-on-surface-variant mb-3">
                 Document Category
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {[
                   { id: "Authorities", label: "Authorities Hub", icon: Scale, desc: "Statutes, Cases, Black's Law" },
-                  { id: "Templates", label: "Templates & Notes", icon: FileText, desc: "Structured drafts & summaries" },
+                  { id: "Summary Notes", label: "Summary Notes", icon: FolderOpen, desc: "Course notes in a subject folder" },
+                  { id: "Templates", label: "Templates", icon: FileText, desc: "Drafting templates & guides" },
                   { id: "Video Vault", label: "Video Vault", icon: Video, desc: "MP4 animations & YouTube lectures" },
                 ].map((item) => {
                   const Icon = item.icon;
@@ -330,6 +333,38 @@ export default function DashboardClient({ initialAnnouncements = [] }: Dashboard
               </div>
             )}
 
+            {category === "Summary Notes" && (
+              <div className="p-6 bg-surface-container-low border border-outline-variant/15 rounded-2xl space-y-5 animate-in fade-in duration-300">
+                <div>
+                  <label className="block font-label text-xs uppercase tracking-wider font-bold text-on-surface-variant mb-2">
+                    Folder
+                  </label>
+                  <select
+                    name="note_folder"
+                    required
+                    defaultValue=""
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-xl py-3 px-4 text-sm font-label text-on-surface outline-none focus:border-primary/50"
+                  >
+                    <option value="" disabled>Choose a folder…</option>
+                    {NOTE_FOLDERS.map((f) => (
+                      <option key={f.slug} value={f.slug}>{f.name}</option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-on-surface-variant/70">The note appears in this folder on the Summary Notes page, not in Templates.</p>
+                </div>
+                <div>
+                  <label className="block font-label text-xs uppercase tracking-wider font-bold text-on-surface-variant mb-2">
+                    Short Description (Optional)
+                  </label>
+                  <input
+                    name="summary"
+                    placeholder="e.g. Week 3: Sources of Nigerian law"
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-xl py-3 px-4 text-sm font-label text-on-surface outline-none focus:border-primary/50"
+                  />
+                </div>
+              </div>
+            )}
+
             {category === "Templates" && (
               <div className="p-6 bg-surface-container-low border border-outline-variant/15 rounded-2xl space-y-5 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -339,7 +374,7 @@ export default function DashboardClient({ initialAnnouncements = [] }: Dashboard
                     </label>
                     <input
                       name="course_tag"
-                      placeholder="e.g. Civil Litigation, Constitutional Law"
+                      placeholder="e.g. Civil Litigation, Law of Evidence"
                       className="w-full bg-surface-container border border-outline-variant/20 rounded-xl py-3 px-4 text-sm font-label text-on-surface outline-none focus:border-primary/50"
                     />
                   </div>

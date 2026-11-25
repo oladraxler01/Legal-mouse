@@ -10,6 +10,7 @@ import {
 import { AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import DocumentViewerModal from "@/components/modals/DocumentViewerModal";
+import { isNoteTag } from "@/lib/noteFolders";
 
 interface LegalTemplate {
   id: string;
@@ -47,15 +48,16 @@ export default function TemplatesPage() {
           setTemplates([]);
         } else if (data) {
           // Map database items onto the visual state structure
-          const validated: LegalTemplate[] = data.map((item: any) => ({
+          // Course notes (Summary Notes folders) live in the same table; keep them out of Templates.
+          const validated: LegalTemplate[] = data.filter((item: { course_tag?: string | null }) => !isNoteTag(item.course_tag)).map((item: any) => ({
             id: item.id || "",
             title: item.title || "Untitled Template",
             slug: item.slug || "",
-            summary: item.principle || "No descriptive summary provided.",
+            summary: item.summary || item.core_content || "No descriptive summary provided.",
             course_tag: item.course_tag || "General Law",
             file_url: item.file_url || null,
-            latin_maxim: item.latin_term || "Instructional Guide",
-            maxim_meaning: item.meaning || "Core study reference materials.",
+            latin_maxim: item.latin_maxim || "Instructional Guide",
+            maxim_meaning: item.maxim_meaning || "Core study reference materials.",
           }));
           setTemplates(validated);
         }
@@ -72,7 +74,7 @@ export default function TemplatesPage() {
 
   // Compute filter tags dynamically based on fetched templates
   const dynamicCategories = Array.from(
-    new Set(templates.map((t) => t.course_tag).filter(Boolean))
+    new Set(templates.map((t) => t.course_tag).filter((tag) => tag && !isNoteTag(tag)))
   );
   
   // Ensure we include 'All Resources' as default and merge other default legal categories for a clean look

@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { NOTE_FOLDERS, folderTag } from "@/lib/noteFolders";
 import { ADMIN_COOKIE, ADMIN_SESSION_SECONDS, createAdminToken, verifyAdminToken } from "@/lib/adminSession";
 
 async function isAdmin(): Promise<boolean> {
@@ -74,7 +75,7 @@ export async function logoutAdminAction(): Promise<void> {
 // 2. Universal Upload Pipeline Server Action
 // -------------------------------------------------------------
 
-export type DocumentCategory = "Templates" | "Authorities" | "Video Vault";
+export type DocumentCategory = "Templates" | "Summary Notes" | "Authorities" | "Video Vault";
 
 export interface UploadActionResult {
   success: boolean;
@@ -144,7 +145,34 @@ export async function universalUploadAction(formData: FormData): Promise<UploadA
     }
 
     // Dynamic routing logic based on Document Category
-    if (category === "Templates") {
+    if (category === "Summary Notes") {
+      const folderSlug = (formData.get("note_folder") as string) || "";
+      const folder = NOTE_FOLDERS.find((f) => f.slug === folderSlug);
+      if (!folder) {
+        return { success: false, error: "Please choose which Summary Notes folder this belongs to." };
+      }
+      const summary = (formData.get("summary") as string)?.trim() || "";
+      const slug = `${folder.slug}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now().toString(36)}`;
+
+      const { data, error } = await supabase.from("notes").insert({
+        title,
+        file_url: resourceUrl,
+        slug,
+        summary,
+        core_content: "",
+        course_tag: folderTag(folder),
+      }).select().single();
+
+      if (error) {
+        return { success: false, error: `Failed to add note: ${error.message}` };
+      }
+
+      return {
+        success: true,
+        message: `Note "${title}" added to the ${folder.name} folder in Summary Notes.`,
+        data,
+      };
+    } else if (category === "Templates") {
       const summary = (formData.get("summary") as string)?.trim() || "";
       const coreContent = (formData.get("core_content") as string)?.trim() || "";
       const courseTag = (formData.get("course_tag") as string)?.trim() || "General";
